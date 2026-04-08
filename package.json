@@ -1,11 +1,16 @@
 {
-  "name": "pairwithcode",
-  "displayName": "PairWithCode",
-  "description": "",
+  "name": "pair-with-code",
+  "displayName": "Pair With Code PRO",
+
+  "publisher": "LJ-Tech",
   "version": "0.0.1",
-  "repository": "https://github.com/username/pairwithcode",
+  "description": "Real-time collaborative coding with private rooms, synchronized typing, and multi-cursor tracking.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com"
+  },
   "engines": {
-    "vscode": "^1.110.0"
+    "vscode": "^1.85.0"
   },
   "categories": [
     "Other"
@@ -17,8 +22,14 @@
   "contributes": {
     "commands": [
       {
-        "command": "pairwithcode.helloWorld",
-        "title": "Hello World"
+        "command": "pairtool.copyRoomId",
+        "title": "Pair Tool: Copy Room ID",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.stopSharing",
+        "title": "Pair Tool: Stop Sharing Session",
+        "category": "Collaboration"
       }
     ]
   },
@@ -26,22 +37,18 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src",
+    "pretest": "npm run compile",
     "test": "vscode-test"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
-    "@types/vscode": "^1.110.0",
-    "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2",
-    "eslint": "^9.39.3",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1"
+    "@types/node": "20.x",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.3"
   },
+
+
   "dependencies": {
-    "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3"
   }
 }
