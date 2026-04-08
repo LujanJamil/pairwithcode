@@ -1,6 +1,1 @@
-# PairWithCode
-A real-time pair programming tool for VS Code.
-
-## Features
-- Real-time typing sync
-- Shared cursor tracking
+# Pair With Code PRO - Real-time collaborative coding for VS Code.
