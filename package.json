@@ -3,7 +3,7 @@
   "displayName": "Pair With Code PRO",
 
   "publisher": "LJ-Tech",
-  "version": "v1.0.0",
+  "version": "1.0.0",
   "description": "Real-time collaborative coding with private rooms, synchronized typing, and multi-cursor tracking.",
   "repository": {
     "type": "git",
