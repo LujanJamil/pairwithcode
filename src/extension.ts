@@ -44,7 +44,33 @@ export async function activate(context: vscode.ExtensionContext) {
   );
   statusBarItem.command = "pairtool.menu";
   context.subscriptions.push(statusBarItem);
+ // ... (Keep your commands and status bar setup here)
 
+  currentRoom = await vscode.window.showInputBox({ 
+    prompt: "Join/Create Room ID", 
+    ignoreFocusOut: true 
+  });
+  
+  if (!currentRoom) return;
+
+  // 🟢 NEW: Add a "Connecting" notification
+  vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: "Pair Tool: Connecting to global server...",
+    cancellable: false
+  }, async (progress) => {
+    
+    socket.connect(); // Start connection
+    
+    // Wait for the socket to actually connect
+    return new Promise<void>((resolve) => {
+      socket.once("connect", () => {
+        socket.emit("join-room", currentRoom);
+        vscode.window.showInformationMessage("✅ Connected to session!");
+        resolve();
+      });
+    });
+  });
   // 3. JOIN SESSION
   currentRoom = await vscode.window.showInputBox({
     prompt: "Join/Create Room ID",
