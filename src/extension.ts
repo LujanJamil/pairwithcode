@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { io, Socket } from "socket.io-client";
 
-const socket: Socket = io("http://localhost:3000", { autoConnect: false });
+const socket: Socket = io("https://pairwithcode.onrender.com", { autoConnect: false });
 let isApplyingRemoteChange = false;
 let currentRoom: string | undefined;
 let statusBarItem: vscode.StatusBarItem;
