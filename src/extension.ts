@@ -38,10 +38,24 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   // 2. STATUS BAR
-  statusBarItem = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Right,
-    100,
-  );
+  statusBarItem = vscode.window.createStatusBarItem("pair-status", vscode.StatusBarAlignment.Right, 100);
+  statusBarItem.text = "$(broadcast) Pair: Connecting...";
+  statusBarItem.show();
+  
+  // Update the button when the connection is successful
+  socket.on("connect", () => {
+      statusBarItem.text = "$(primitive-dot) Pair: Online";
+      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.remoteBackground');
+      statusBarItem.tooltip = "You are connected to the Pair Relay Server";
+  });
+  
+  // Update the button if the server goes down
+  socket.on("disconnect", () => {
+      statusBarItem.text = "$(alert) Pair: Offline";
+      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+  });
+
+
   statusBarItem.command = "pairtool.menu";
   context.subscriptions.push(statusBarItem);
  // ... (Keep your commands and status bar setup here)
