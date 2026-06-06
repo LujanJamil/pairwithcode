@@ -97,6 +97,24 @@
           "scope": "application"
         }
       }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "pair-collaboration",
+          "title": "Pair Session",
+          "icon": "$(broadcast)"
+        }
+      ]
+    },
+    "views": {
+      "pair-collaboration": [
+        {
+          "id": "pairPresence",
+          "name": "Active Collaborators",
+          "when": "pairWithCode.isConnected"
+        }
+      ]
     }
   },
   "scripts": {

@@ -8,6 +8,7 @@ import { logger } from './utils/logger';
 import { getErrorContext } from './utils/errors';
 import { getSettings, onSettingsChange } from './features/settings';
 import { createUICommands } from './ui/commands';
+import { createPresenceProvider } from './ui/treeView';
 
 let isApplyingRemoteChange = false;
 
@@ -42,6 +43,14 @@ export async function activate(context: vscode.ExtensionContext) {
     // Setup UI commands
     const uiCommands = createUICommands(store, persistence);
     uiCommands.registerCommands(context);
+
+    // Register presence tree view
+    const presenceProvider = createPresenceProvider(store);
+    context.subscriptions.push(
+      vscode.window.registerTreeDataProvider('pairPresence', presenceProvider),
+    );
+
+    logger.debug('Presence tree view registered');
 
     // Register settings change listener
     context.subscriptions.push(
@@ -99,6 +108,8 @@ export async function activate(context: vscode.ExtensionContext) {
     handlers.setupHandlers(context);
 
     store.on('connection-state-changed', ({ isConnected, isReconnecting }: any) => {
+      vscode.commands.executeCommand('setContext', 'pairWithCode.isConnected', isConnected);
+
       if (isConnected) {
         statusBar.text = '$(primitive-dot) Pair: Online';
         statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.remoteBackground');
