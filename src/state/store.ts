@@ -148,6 +148,27 @@ export class StateStore extends EventEmitter {
       this.state.sessionHistory.pop();
     }
     this.emit('session-added', { session });
+    logger.debug('Session added to store', { roomId: session.roomId });
+  }
+
+  removeSessionFromHistory(roomId: string): void {
+    const index = this.state.sessionHistory.findIndex((s) => s.roomId === roomId);
+    if (index !== -1) {
+      this.state.sessionHistory.splice(index, 1);
+      this.emit('session-removed', { roomId });
+      logger.debug('Session removed from store', { roomId });
+    }
+  }
+
+  toggleSessionFavorite(roomId: string): boolean {
+    const session = this.state.sessionHistory.find((s) => s.roomId === roomId);
+    if (session) {
+      session.isFavorite = !session.isFavorite;
+      this.emit('session-updated', { roomId, session });
+      logger.debug('Session favorite toggled', { roomId, isFavorite: session.isFavorite });
+      return session.isFavorite;
+    }
+    return false;
   }
 
   getSessionHistory(): RoomSession[] {

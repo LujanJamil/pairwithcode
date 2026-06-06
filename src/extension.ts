@@ -3,6 +3,7 @@ import { createSocketClient } from './socket/client';
 import { createSocketHandlers } from './socket/handlers';
 import { createStateStore } from './state/store';
 import { createPersistence } from './state/persistence';
+import { createRoomHistory } from './state/roomHistory';
 import { logger } from './utils/logger';
 import { getErrorContext } from './utils/errors';
 import { getSettings, onSettingsChange } from './features/settings';
@@ -18,6 +19,11 @@ export async function activate(context: vscode.ExtensionContext) {
     // Initialize core modules
     const persistence = createPersistence(context);
     const store = createStateStore();
+    const roomHistory = createRoomHistory(persistence);
+
+    // Load room history
+    const history = await roomHistory.loadHistory();
+    history.forEach((room) => store.addSessionToHistory(room));
 
     // Load settings (these come from VS Code configuration)
     const settings = getSettings();
@@ -128,6 +134,11 @@ export async function activate(context: vscode.ExtensionContext) {
           await socketClient.connect();
           socketClient.joinRoom(room);
           await persistence.setLastRoom(room);
+
+          // Save room to history
+          const roomSession = await roomHistory.addRoom(room, [{ id: settings.userName, name: settings.userName }]);
+          store.addSessionToHistory(roomSession);
+
           store.setConnectionState(true, false);
           vscode.window.showInformationMessage('✅ Connected to session!');
           logger.info('Connected to room', { room });
