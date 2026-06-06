@@ -30,8 +30,74 @@
         "command": "pairtool.stopSharing",
         "title": "Pair Tool: Stop Sharing Session",
         "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.menu",
+        "title": "Pair Tool: Menu",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.recentRooms",
+        "title": "Pair Tool: Recent Rooms",
+        "category": "Collaboration"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Pair With Code",
+      "properties": {
+        "pairWithCode.serverUrl": {
+          "type": "string",
+          "default": "https://pairwithcode.onrender.com",
+          "description": "Server URL for collaboration. Change this to point to your own server.",
+          "scope": "application"
+        },
+        "pairWithCode.userName": {
+          "type": "string",
+          "default": "",
+          "description": "Your display name in collaboration sessions. Leave blank to use your Git username.",
+          "scope": "application"
+        },
+        "pairWithCode.autoJoin": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically join the last room on startup.",
+          "scope": "application"
+        },
+        "pairWithCode.followMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically follow partner's file switches.",
+          "scope": "application"
+        },
+        "pairWithCode.autoReconnect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically reconnect on connection loss.",
+          "scope": "application"
+        },
+        "pairWithCode.theme": {
+          "type": "string",
+          "enum": ["light", "dark", "auto"],
+          "default": "auto",
+          "description": "Chat and UI theme preference.",
+          "scope": "application"
+        },
+        "pairWithCode.showActivityIndicators": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show typing indicators and activity highlights.",
+          "scope": "application"
+        },
+        "pairWithCode.maxChatHistory": {
+          "type": "number",
+          "default": 500,
+          "minimum": 50,
+          "maximum": 5000,
+          "description": "Maximum number of chat messages to keep per session.",
+          "scope": "application"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

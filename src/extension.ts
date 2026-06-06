@@ -5,6 +5,8 @@ import { createStateStore } from './state/store';
 import { createPersistence } from './state/persistence';
 import { logger } from './utils/logger';
 import { getErrorContext } from './utils/errors';
+import { getSettings, onSettingsChange } from './features/settings';
+import { createUICommands } from './ui/commands';
 
 let isApplyingRemoteChange = false;
 
@@ -16,11 +18,46 @@ export async function activate(context: vscode.ExtensionContext) {
     // Initialize core modules
     const persistence = createPersistence(context);
     const store = createStateStore();
-    const preferences = await persistence.loadUserPreferences();
-    store.updatePreferences(preferences);
 
-    const socketClient = createSocketClient(preferences.serverUrl);
+    // Load settings (these come from VS Code configuration)
+    const settings = getSettings();
+    store.updatePreferences({
+      serverUrl: settings.serverUrl,
+      userName: settings.userName,
+      autoJoin: settings.autoJoin,
+      followMode: settings.followMode,
+      autoReconnect: settings.autoReconnect,
+      theme: settings.theme,
+    });
+
+    const socketClient = createSocketClient(settings.serverUrl);
     const handlers = createSocketHandlers(socketClient, store, persistence);
+
+    // Setup UI commands
+    const uiCommands = createUICommands(store, persistence);
+    uiCommands.registerCommands(context);
+
+    // Register settings change listener
+    context.subscriptions.push(
+      onSettingsChange((event) => {
+        if (event.affectsConfiguration('pairWithCode.serverUrl')) {
+          logger.info('Server URL changed, restart extension to apply');
+        }
+        if (event.affectsConfiguration('pairWithCode.userName')) {
+          const newName = getSettings().userName;
+          store.updatePreferences({ userName: newName });
+          logger.info('User name updated', { userName: newName });
+        }
+        if (event.affectsConfiguration('pairWithCode.followMode')) {
+          const followMode = getSettings().followMode;
+          store.updatePreferences({ followMode });
+        }
+        if (event.affectsConfiguration('pairWithCode.autoReconnect')) {
+          const autoReconnect = getSettings().autoReconnect;
+          store.updatePreferences({ autoReconnect });
+        }
+      }),
+    );
 
     // Register commands
     context.subscriptions.push(

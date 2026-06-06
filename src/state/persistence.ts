@@ -44,8 +44,10 @@ export class Persistence {
         theme: 'auto',
         serverUrl: 'https://pairwithcode.onrender.com',
       });
+      // Merge with current settings (settings take precedence)
+      const merged = { ...prefs };
       logger.debug('Loaded user preferences');
-      return prefs;
+      return merged;
     } catch (error) {
       throw new PersistenceError(`Failed to load preferences: ${error}`, 'fallback');
     }
