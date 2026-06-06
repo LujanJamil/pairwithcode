@@ -7,6 +7,7 @@ import { ContentChange, CollaboratorStatus, Message } from '../models/types';
 import { logger } from '../utils/logger';
 import { generateUUID } from '../utils/uuid';
 import { ActivityTracker } from '../features/activity';
+import { ConflictResolver } from '../features/conflict';
 
 export class SocketHandlers {
   constructor(
@@ -14,6 +15,7 @@ export class SocketHandlers {
     private store: StateStore,
     private persistence: Persistence,
     private activityTracker?: ActivityTracker,
+    private conflictResolver?: ConflictResolver,
   ) {}
 
   setupHandlers(context: vscode.ExtensionContext): void {
@@ -83,6 +85,31 @@ export class SocketHandlers {
       logger.debug('Remote typing received', { fileName: data.fileName });
       this.activityTracker?.recordTyping('remote');
 
+      // Create remote change object
+      const remoteChange: ContentChange = {
+        userId: 'remote',
+        timestamp: Date.now(),
+        offset: data.offset,
+        text: data.text,
+        length: data.length,
+        fileName: data.fileName,
+        version: this.store.getVectorClock(),
+      };
+
+      // Check for conflicts with recent local changes
+      if (this.conflictResolver) {
+        const recentChanges = this.conflictResolver.getChangeHistory();
+        const lastLocalChange = recentChanges.find((c) => c.fileName === data.fileName);
+
+        if (lastLocalChange && this.conflictResolver.detectConflict(lastLocalChange, remoteChange)) {
+          const resolved = this.conflictResolver.resolveConflict(lastLocalChange, remoteChange);
+          logger.warn('Conflict detected and resolved', { fileName: data.fileName });
+          this.store.addChange(resolved);
+        } else {
+          this.conflictResolver.addChange(remoteChange);
+        }
+      }
+
       const editor = vscode.window.activeTextEditor;
       if (editor && vscode.workspace.asRelativePath(editor.document.fileName) === data.fileName) {
         const pos = editor.document.positionAt(data.offset);
@@ -96,16 +123,7 @@ export class SocketHandlers {
       }
 
       // Track change in store
-      const change: ContentChange = {
-        userId: 'remote',
-        timestamp: Date.now(),
-        offset: data.offset,
-        text: data.text,
-        length: data.length,
-        fileName: data.fileName,
-        version: this.store.getVectorClock(),
-      };
-      this.store.addChange(change);
+      this.store.addChange(remoteChange);
     });
 
     this.socket.onEvent(SocketEvents.REMOTE_CURSOR, (data: any) => {
@@ -250,6 +268,7 @@ export const createSocketHandlers = (
   store: StateStore,
   persistence: Persistence,
   activityTracker?: ActivityTracker,
+  conflictResolver?: ConflictResolver,
 ): SocketHandlers => {
-  return new SocketHandlers(socket, store, persistence, activityTracker);
+  return new SocketHandlers(socket, store, persistence, activityTracker, conflictResolver);
 };

@@ -10,6 +10,7 @@ import { getSettings, onSettingsChange } from './features/settings';
 import { createUICommands } from './ui/commands';
 import { createPresenceProvider } from './ui/treeView';
 import { createActivityTracker } from './features/activity';
+import { createConflictResolver } from './features/conflict';
 
 let isApplyingRemoteChange = false;
 
@@ -40,11 +41,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const socketClient = createSocketClient(settings.serverUrl);
     const activityTracker = createActivityTracker(store);
-    const handlers = createSocketHandlers(socketClient, store, persistence, activityTracker);
+    const conflictResolver = createConflictResolver();
+    const handlers = createSocketHandlers(socketClient, store, persistence, activityTracker, conflictResolver);
 
     // Cleanup on deactivate
     context.subscriptions.push({
-      dispose: () => activityTracker.dispose(),
+      dispose: () => {
+        activityTracker.dispose();
+        conflictResolver.clearHistory();
+      },
     });
 
     // Setup UI commands
