@@ -6,9 +6,10 @@ import { logger } from '../utils/logger';
 export class CollaboratorTreeItem extends vscode.TreeItem {
   constructor(
     public readonly collaborator: CollaboratorStatus,
+    public readonly activityIndicator: string = '',
     command?: vscode.Command,
   ) {
-    const label = collaborator.userName;
+    const label = `${activityIndicator}${collaborator.userName}`;
     const description = collaborator.status === 'typing' ? '✍️ typing' : collaborator.status === 'idle' ? 'idle' : 'active';
     super(label, vscode.TreeItemCollapsibleState.None);
 

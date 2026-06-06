@@ -6,12 +6,14 @@ import { SocketEvents } from '../models/events';
 import { ContentChange, CollaboratorStatus, Message } from '../models/types';
 import { logger } from '../utils/logger';
 import { generateUUID } from '../utils/uuid';
+import { ActivityTracker } from '../features/activity';
 
 export class SocketHandlers {
   constructor(
     private socket: SocketClient,
     private store: StateStore,
     private persistence: Persistence,
+    private activityTracker?: ActivityTracker,
   ) {}
 
   setupHandlers(context: vscode.ExtensionContext): void {
@@ -79,6 +81,8 @@ export class SocketHandlers {
 
     this.socket.onEvent(SocketEvents.REMOTE_TYPING, async (data: any) => {
       logger.debug('Remote typing received', { fileName: data.fileName });
+      this.activityTracker?.recordTyping('remote');
+
       const editor = vscode.window.activeTextEditor;
       if (editor && vscode.workspace.asRelativePath(editor.document.fileName) === data.fileName) {
         const pos = editor.document.positionAt(data.offset);
@@ -106,6 +110,8 @@ export class SocketHandlers {
 
     this.socket.onEvent(SocketEvents.REMOTE_CURSOR, (data: any) => {
       logger.debug('Remote cursor received', { userId: data.userId, line: data.line });
+      this.activityTracker?.recordCursorMove(data.userId);
+
       const userId = data.userId;
       const status = this.store.getCollaborator(userId);
       if (status) {
@@ -243,6 +249,7 @@ export const createSocketHandlers = (
   socket: SocketClient,
   store: StateStore,
   persistence: Persistence,
+  activityTracker?: ActivityTracker,
 ): SocketHandlers => {
-  return new SocketHandlers(socket, store, persistence);
+  return new SocketHandlers(socket, store, persistence, activityTracker);
 };
