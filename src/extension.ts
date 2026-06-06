@@ -1,253 +1,155 @@
-import * as vscode from "vscode";
-import { io, Socket } from "socket.io-client";
+import * as vscode from 'vscode';
+import { createSocketClient } from './socket/client';
+import { createSocketHandlers } from './socket/handlers';
+import { createStateStore } from './state/store';
+import { createPersistence } from './state/persistence';
+import { logger } from './utils/logger';
+import { getErrorContext } from './utils/errors';
 
-const socket: Socket = io("https://pairwithcode.onrender.com", { autoConnect: false });
 let isApplyingRemoteChange = false;
-let currentRoom: string | undefined;
-let statusBarItem: vscode.StatusBarItem;
-const remoteDecorations = new Map<string, vscode.TextEditorDecorationType>();
 
 export async function activate(context: vscode.ExtensionContext) {
-  // 1. SETUP COMMANDS
-  context.subscriptions.push(
-    vscode.commands.registerCommand("pairtool.copyRoomId", () => {
-      if (currentRoom) {
-        vscode.env.clipboard.writeText(currentRoom);
-        vscode.window.showInformationMessage(
-          `Room ID '${currentRoom}' copied!`,
-        );
-      }
-    }),
-    vscode.commands.registerCommand("pairtool.stopSharing", () => {
-      socket.disconnect();
-      currentRoom = undefined;
-      statusBarItem.hide();
-      remoteDecorations.forEach((d) => d.dispose());
-      vscode.window.showInformationMessage("Collaboration session ended.");
-    }),
-    vscode.commands.registerCommand("pairtool.menu", async () => {
-      const choice = await vscode.window.showQuickPick([
-        "Copy Room ID",
-        "Stop Sharing Session",
-      ]);
-      if (choice === "Copy Room ID")
-        {vscode.commands.executeCommand("pairtool.copyRoomId");}
-      if (choice === "Stop Sharing Session")
-        {vscode.commands.executeCommand("pairtool.stopSharing");}
-    }),
-  );
+  try {
+    logger.initialize();
+    logger.info('Pair With Code extension activating');
 
-  // 2. STATUS BAR
-  statusBarItem = vscode.window.createStatusBarItem("pair-status", vscode.StatusBarAlignment.Right, 100);
-  statusBarItem.text = "$(broadcast) Pair: Connecting...";
-  statusBarItem.show();
-  
-  // Update the button when the connection is successful
-  socket.on("connect", () => {
-      statusBarItem.text = "$(primitive-dot) Pair: Online";
-      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.remoteBackground');
-      statusBarItem.tooltip = "You are connected to the Pair Relay Server";
-  });
-  
-  // Update the button if the server goes down
-  socket.on("disconnect", () => {
-      statusBarItem.text = "$(alert) Pair: Offline";
-      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
-  });
+    // Initialize core modules
+    const persistence = createPersistence(context);
+    const store = createStateStore();
+    const preferences = await persistence.loadUserPreferences();
+    store.updatePreferences(preferences);
 
+    const socketClient = createSocketClient(preferences.serverUrl);
+    const handlers = createSocketHandlers(socketClient, store, persistence);
 
-  statusBarItem.command = "pairtool.menu";
-  context.subscriptions.push(statusBarItem);
- // ... (Keep your commands and status bar setup here)
+    // Register commands
+    context.subscriptions.push(
+      vscode.commands.registerCommand('pairtool.copyRoomId', () => {
+        const room = store.getCurrentRoom();
+        if (room) {
+          vscode.env.clipboard.writeText(room);
+          vscode.window.showInformationMessage(`Room ID '${room}' copied!`);
+        }
+      }),
 
-  currentRoom = await vscode.window.showInputBox({ 
-    prompt: "Join/Create Room ID", 
-    ignoreFocusOut: true 
-  });
-  
-  if (!currentRoom) return;
+      vscode.commands.registerCommand('pairtool.stopSharing', async () => {
+        await socketClient.disconnect();
+        store.setCurrentRoom(undefined);
+        vscode.window.showInformationMessage('Collaboration session ended.');
+      }),
 
-  // 🟢 NEW: Add a "Connecting" notification
-  vscode.window.withProgress({
-    location: vscode.ProgressLocation.Notification,
-    title: "Pair Tool: Connecting to global server...",
-    cancellable: false
-  }, async (progress) => {
-    
-    socket.connect(); // Start connection
-    
-    // Wait for the socket to actually connect
-    return new Promise<void>((resolve) => {
-      socket.once("connect", () => {
-        socket.emit("join-room", currentRoom);
-        vscode.window.showInformationMessage("✅ Connected to session!");
-        resolve();
-      });
-    });
-  });
-  // 3. JOIN SESSION
-  currentRoom = await vscode.window.showInputBox({
-    prompt: "Join/Create Room ID",
-    ignoreFocusOut: true,
-  });
-  if (!currentRoom) return;
-
-  socket.connect();
-  socket.on("connect", () => socket.emit("join-room", currentRoom));
-
-  // --- 4. RECEIVERS ---
-  socket.on("room-update", (data: { count: number }) => {
-    statusBarItem.text = `$(broadcast) Room: ${currentRoom} (${data.count})`;
-    statusBarItem.show();
-    if (data.count > 1)
-      vscode.window.showInformationMessage("A partner has joined the session!");
-  });
-
-  // Follow Mode Receiver: Opens the file sent by partner
-  socket.on("remote-file-switch", async (data: { relativePath: string }) => {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) return;
-
-    const fullPath = vscode.Uri.joinPath(
-      workspaceFolders[0].uri,
-      data.relativePath,
+      vscode.commands.registerCommand('pairtool.menu', async () => {
+        const choice = await vscode.window.showQuickPick(['Copy Room ID', 'Stop Sharing Session']);
+        if (choice === 'Copy Room ID') vscode.commands.executeCommand('pairtool.copyRoomId');
+        if (choice === 'Stop Sharing Session') vscode.commands.executeCommand('pairtool.stopSharing');
+      }),
     );
-    try {
-      const doc = await vscode.workspace.openTextDocument(fullPath);
-      await vscode.window.showTextDocument(doc, {
-        preview: false,
-        preserveFocus: true,
-      });
-    } catch (e) {
-      console.error("Could not find file remotely:", data.relativePath);
-    }
-  });
 
-  socket.on("remote-typing", async (data) => {
-    const editor = vscode.window.activeTextEditor;
-    if (
-      editor &&
-      vscode.workspace.asRelativePath(editor.document.fileName) ===
-        data.fileName
-    ) {
-      isApplyingRemoteChange = true;
-      await editor.edit(
-        (eb) => {
-          const pos = editor.document.positionAt(data.offset);
-          data.text === ""
-            ? eb.delete(
-                new vscode.Range(
-                  pos,
-                  editor.document.positionAt(data.offset + data.length),
-                ),
-              )
-            : eb.insert(pos, data.text);
-        },
-        { undoStopBefore: false, undoStopAfter: false },
-      );
-      isApplyingRemoteChange = false;
-    }
-  });
+    // Setup status bar
+    const statusBar = vscode.window.createStatusBarItem('pair-status', vscode.StatusBarAlignment.Right, 100);
+    statusBar.text = '$(broadcast) Pair: Ready';
+    statusBar.command = 'pairtool.menu';
+    statusBar.show();
+    context.subscriptions.push(statusBar);
 
-  socket.on("remote-cursor", async (data) => {
-    const editor = vscode.window.activeTextEditor;
-    if (
-      editor &&
-      vscode.workspace.asRelativePath(editor.document.fileName) ===
-        data.fileName
-    ) {
-      const deco = getOrCreateDecoration(data.userId);
-      const pos = new vscode.Position(data.line, data.character);
-      editor.setDecorations(deco, [new vscode.Range(pos, pos)]);
-    }
-  });
+    // Setup socket event handlers
+    handlers.setupHandlers(context);
 
-  socket.on("request-initial-state", (data) => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor)
-      socket.emit("send-initial-state", {
-        requesterId: data.requesterId,
-        content: editor.document.getText(),
-      });
-  });
-
-  socket.on("receive-initial-state", async (content) => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-      isApplyingRemoteChange = true;
-      await editor.edit((eb) =>
-        eb.replace(
-          new vscode.Range(
-            editor.document.positionAt(0),
-            editor.document.positionAt(editor.document.getText().length),
-          ),
-          content,
-        ),
-      );
-      isApplyingRemoteChange = false;
-    }
-  });
-
-  socket.on("user-disconnected", (id) => {
-    remoteDecorations.get(id)?.dispose();
-    remoteDecorations.delete(id);
-    vscode.window.showWarningMessage("A partner has left the session.");
-  });
-
-  // --- 5. SENDERS ---
-  context.subscriptions.push(
-    // Sync active file switch (Follow Mode)
-    vscode.window.onDidChangeActiveTextEditor((editor) => {
-      if (editor && currentRoom) {
-        socket.emit("file-switch", {
-          roomName: currentRoom,
-          relativePath: vscode.workspace.asRelativePath(
-            editor.document.fileName,
-          ),
-        });
+    store.on('connection-state-changed', ({ isConnected, isReconnecting }: any) => {
+      if (isConnected) {
+        statusBar.text = '$(primitive-dot) Pair: Online';
+        statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.remoteBackground');
+      } else if (isReconnecting) {
+        statusBar.text = '$(sync~spin) Pair: Reconnecting...';
+      } else {
+        statusBar.text = '$(alert) Pair: Offline';
+        statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
       }
-    }),
-    vscode.workspace.onDidChangeTextDocument((e) => {
-      if (!isApplyingRemoteChange && currentRoom) {
-        for (const c of e.contentChanges) {
-          socket.emit("typing", {
+    });
+
+    // Prompt for room
+    const room = await vscode.window.showInputBox({
+      prompt: 'Join/Create Room ID',
+      ignoreFocusOut: true,
+      value: (await persistence.getLastRoom()) || '',
+    });
+
+    if (!room) {
+      logger.info('No room selected, extension inactive');
+      return;
+    }
+
+    // Connect to room
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: 'Connecting to collaboration server...',
+      },
+      async () => {
+        try {
+          store.setCurrentRoom(room);
+          await socketClient.connect();
+          socketClient.joinRoom(room);
+          await persistence.setLastRoom(room);
+          store.setConnectionState(true, false);
+          vscode.window.showInformationMessage('✅ Connected to session!');
+          logger.info('Connected to room', { room });
+        } catch (error) {
+          const ctx = getErrorContext(error);
+          logger.error('Failed to connect', ctx);
+          vscode.window.showErrorMessage(`Failed to connect: ${ctx.message}`);
+          throw error;
+        }
+      },
+    );
+
+    // Setup document change listeners
+    context.subscriptions.push(
+      vscode.window.onDidChangeActiveTextEditor((editor) => {
+        const currentRoom = store.getCurrentRoom();
+        if (editor && currentRoom) {
+          socketClient.emitEvent('file-switch' as any, {
             roomName: currentRoom,
-            text: c.text,
-            offset: c.rangeOffset,
-            length: c.rangeLength,
-            fileName: vscode.workspace.asRelativePath(e.document.fileName),
+            relativePath: vscode.workspace.asRelativePath(editor.document.fileName),
           });
         }
-      }
-    }),
-    vscode.window.onDidChangeTextEditorSelection((e) => {
-      if (!isApplyingRemoteChange && currentRoom) {
-        socket.emit("cursor", {
-          roomName: currentRoom,
-          line: e.selections[0].active.line,
-          character: e.selections[0].active.character,
-          fileName: vscode.workspace.asRelativePath(
-            e.textEditor.document.fileName,
-          ),
-        });
-      }
-    }),
-  );
-}
+      }),
 
-function getOrCreateDecoration(id: string) {
-  if (remoteDecorations.has(id)) return remoteDecorations.get(id)!;
-  const color = `hsla(${Math.floor(Math.random() * 360)}, 70%, 50%, 0.8)`;
-  const deco = vscode.window.createTextEditorDecorationType({
-    borderStyle: "solid",
-    borderWidth: "0 0 0 2px",
-    borderColor: color,
-    after: { contentText: ` Partner`, color, margin: "0 0 0 10px" },
-  });
-  remoteDecorations.set(id, deco);
-  return deco;
+      vscode.workspace.onDidChangeTextDocument((e) => {
+        const currentRoom = store.getCurrentRoom();
+        if (!isApplyingRemoteChange && currentRoom) {
+          for (const c of e.contentChanges) {
+            socketClient.emitEvent('typing' as any, {
+              roomName: currentRoom,
+              text: c.text,
+              offset: c.rangeOffset,
+              length: c.rangeLength,
+              fileName: vscode.workspace.asRelativePath(e.document.fileName),
+            });
+          }
+        }
+      }),
+
+      vscode.window.onDidChangeTextEditorSelection((e) => {
+        const currentRoom = store.getCurrentRoom();
+        if (!isApplyingRemoteChange && currentRoom) {
+          socketClient.emitEvent('cursor' as any, {
+            roomName: currentRoom,
+            line: e.selections[0].active.line,
+            character: e.selections[0].active.character,
+            fileName: vscode.workspace.asRelativePath(e.textEditor.document.fileName),
+          });
+        }
+      }),
+    );
+  } catch (error) {
+    const ctx = getErrorContext(error);
+    logger.error('Extension activation failed', ctx);
+    vscode.window.showErrorMessage('Pair With Code failed to activate');
+  }
 }
 
 export function deactivate() {
-  socket.disconnect();
+  logger.info('Pair With Code extension deactivating');
+  logger.dispose();
 }
