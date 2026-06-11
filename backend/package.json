@@ -22,7 +22,7 @@
     "@socket.io/redis-adapter": "^8.1.0",
     "pg": "^8.11.0",
     "redis": "^4.6.13",
-    "jsonwebtoken": "^9.1.2",
+    "jsonwebtoken": "^9.0.2",
     "passport": "^0.7.0",
     "passport-github": "^1.1.1",
     "passport-gitlab2": "^6.2.0",
