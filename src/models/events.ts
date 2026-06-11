@@ -44,6 +44,52 @@ export const SocketEvents = {
   MESSAGE_DELETED: 'message-deleted',
   MESSAGE_HISTORY: 'message-history',
 
+  // Recording events
+  RECORDING_STARTED: 'recording-started',
+  RECORDING_FRAMES: 'recording-frames',
+  RECORDING_STOPPED: 'recording-stopped',
+  RECORDING_SAVED: 'recording-saved',
+  RECORDING_ERROR: 'recording-error',
+  RECORDING_LIST_UPDATED: 'recording-list-updated',
+
+  // Code Review events
+  CODE_REVIEW_COMMENT_ADDED: 'code-review-comment-added',
+  CODE_REVIEW_COMMENT_UPDATED: 'code-review-comment-updated',
+  CODE_REVIEW_COMMENT_DELETED: 'code-review-comment-deleted',
+  CODE_REVIEW_THREAD_REPLY: 'code-review-thread-reply',
+  CODE_REVIEW_THREAD_RESOLVED: 'code-review-thread-resolved',
+
+  // Analytics events
+  ANALYTICS_EVENT_BATCH: 'analytics-event-batch',
+  ANALYTICS_SESSION_END: 'analytics-session-end',
+
+  // Encryption events
+  ENCRYPTION_KEY_EXCHANGE: 'encryption-key-exchange',
+  ENCRYPTION_KEY_ACK: 'encryption-key-ack',
+  ENCRYPTION_KEY_FINGERPRINT_VERIFIED: 'encryption-key-fingerprint-verified',
+
+  // A/V events
+  AV_CALL_INITIATED: 'av-call-initiated',
+  AV_CALL_OFFER: 'av-call-offer',
+  AV_CALL_ANSWER: 'av-call-answer',
+  AV_ICE_CANDIDATE: 'av-ice-candidate',
+  AV_CALL_ACCEPTED: 'av-call-accepted',
+  AV_CALL_DECLINED: 'av-call-declined',
+  AV_CALL_ENDED: 'av-call-ended',
+  AV_CALL_FAILED: 'av-call-failed',
+
+  // Terminal events
+  TERMINAL_START: 'terminal-start',
+  TERMINAL_INPUT: 'terminal-input',
+  TERMINAL_OUTPUT: 'terminal-output',
+  TERMINAL_CLOSED: 'terminal-closed',
+  TERMINAL_ERROR: 'terminal-error',
+
+  // OAuth events
+  OAUTH_LOGIN_INITIATED: 'oauth-login-initiated',
+  OAUTH_LOGIN_SUCCESS: 'oauth-login-success',
+  OAUTH_LOGIN_FAILED: 'oauth-login-failed',
+
   // Error/Control events
   ERROR: 'error',
   RECONNECTING: 'reconnecting',
@@ -92,6 +138,209 @@ export interface SocketEventMap {
   [SocketEvents.ERROR]: { message: string };
   [SocketEvents.RECONNECTING]: void;
   [SocketEvents.RECONNECTED]: void;
+
+  // Recording event payloads
+  [SocketEvents.RECORDING_STARTED]: {
+    recordingId: string;
+    roomName: string;
+    initiatedBy: string;
+    startTime: number;
+  };
+  [SocketEvents.RECORDING_FRAMES]: {
+    recordingId: string;
+    frames: Array<{
+      timestamp: number;
+      activeFile?: string;
+      cursorLine?: number;
+      cursorColumn?: number;
+    }>;
+  };
+  [SocketEvents.RECORDING_STOPPED]: {
+    recordingId: string;
+    roomName: string;
+    duration: number;
+    frameCount: number;
+  };
+  [SocketEvents.RECORDING_SAVED]: {
+    recordingId: string;
+    storageUrl: string;
+    videoUrl?: string;
+    metadata: Record<string, any>;
+  };
+  [SocketEvents.RECORDING_ERROR]: {
+    recordingId: string;
+    error: string;
+  };
+  [SocketEvents.RECORDING_LIST_UPDATED]: {
+    recordings: Array<{
+      id: string;
+      status: string;
+      startTime: number;
+      endTime?: number;
+      durationMs?: number;
+    }>;
+  };
+
+  // Code Review event payloads
+  [SocketEvents.CODE_REVIEW_COMMENT_ADDED]: {
+    id: string;
+    sessionId: string;
+    filePath: string;
+    lineNumber: number;
+    userId: string;
+    userName: string;
+    content: string;
+    type: string;
+    severity: string;
+    threadId?: string;
+    timestamp: number;
+  };
+  [SocketEvents.CODE_REVIEW_COMMENT_UPDATED]: {
+    commentId: string;
+    status: 'open' | 'resolved' | 'dismissed';
+    updatedAt: number;
+  };
+  [SocketEvents.CODE_REVIEW_COMMENT_DELETED]: {
+    commentId: string;
+    filePath: string;
+  };
+  [SocketEvents.CODE_REVIEW_THREAD_REPLY]: {
+    threadId: string;
+    replyId: string;
+    userId: string;
+    userName: string;
+    content: string;
+    timestamp: number;
+  };
+  [SocketEvents.CODE_REVIEW_THREAD_RESOLVED]: {
+    threadId: string;
+    resolvedBy: string;
+    resolvedAt: number;
+  };
+
+  // Analytics event payloads
+  [SocketEvents.ANALYTICS_EVENT_BATCH]: {
+    events: Array<{
+      userId: string;
+      roomName: string;
+      timestamp: number;
+      eventType: string;
+      metadata?: Record<string, any>;
+    }>;
+  };
+  [SocketEvents.ANALYTICS_SESSION_END]: {
+    sessionId: string;
+    endTime: number;
+    totalEvents: number;
+  };
+
+  // Encryption event payloads
+  [SocketEvents.ENCRYPTION_KEY_EXCHANGE]: {
+    userId: string;
+    userName: string;
+    publicKey: string;
+    algorithm: string;
+    fingerprint: string;
+    timestamp: number;
+  };
+  [SocketEvents.ENCRYPTION_KEY_ACK]: {
+    userId: string;
+    fingerprint: string;
+  };
+  [SocketEvents.ENCRYPTION_KEY_FINGERPRINT_VERIFIED]: {
+    userId: string;
+    fingerprint: string;
+  };
+
+  // A/V event payloads
+  [SocketEvents.AV_CALL_INITIATED]: {
+    callId: string;
+    initiatorId: string;
+    recipientId: string;
+    mediaType: 'audio' | 'video' | 'screen';
+    timestamp: number;
+  };
+  [SocketEvents.AV_CALL_OFFER]: {
+    callId: string;
+    offer: string;
+  };
+  [SocketEvents.AV_CALL_ANSWER]: {
+    callId: string;
+    answer: string;
+  };
+  [SocketEvents.AV_ICE_CANDIDATE]: {
+    callId: string;
+    candidate: string;
+  };
+  [SocketEvents.AV_CALL_ACCEPTED]: {
+    callId: string;
+    acceptedAt: number;
+  };
+  [SocketEvents.AV_CALL_DECLINED]: {
+    callId: string;
+    declinedBy: string;
+    declinedAt: number;
+  };
+  [SocketEvents.AV_CALL_ENDED]: {
+    callId: string;
+    endedBy: string;
+    durationMs: number;
+  };
+  [SocketEvents.AV_CALL_FAILED]: {
+    callId: string;
+    error: string;
+    failedAt: number;
+  };
+
+  // Terminal event payloads
+  [SocketEvents.TERMINAL_START]: {
+    sessionId: string;
+    ptyId: string;
+    shell: string;
+    cols: number;
+    rows: number;
+  };
+  [SocketEvents.TERMINAL_INPUT]: {
+    sessionId: string;
+    ptyId: string;
+    data: string;
+    userId: string;
+  };
+  [SocketEvents.TERMINAL_OUTPUT]: {
+    sessionId: string;
+    ptyId: string;
+    data: string;
+  };
+  [SocketEvents.TERMINAL_CLOSED]: {
+    sessionId: string;
+    ptyId: string;
+    exitCode: number;
+  };
+  [SocketEvents.TERMINAL_ERROR]: {
+    sessionId: string;
+    ptyId: string;
+    error: string;
+  };
+
+  // OAuth event payloads
+  [SocketEvents.OAUTH_LOGIN_INITIATED]: {
+    provider: 'github' | 'gitlab';
+    state: string;
+  };
+  [SocketEvents.OAUTH_LOGIN_SUCCESS]: {
+    provider: 'github' | 'gitlab';
+    token: string;
+    user: {
+      id: string;
+      username: string;
+      email?: string;
+      avatar?: string;
+    };
+  };
+  [SocketEvents.OAUTH_LOGIN_FAILED]: {
+    provider: 'github' | 'gitlab';
+    error: string;
+  };
 }
 
 export function isValidEvent(event: string): event is SocketEvent {

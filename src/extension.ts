@@ -7,10 +7,23 @@ import { createRoomHistory } from './state/roomHistory';
 import { logger } from './utils/logger';
 import { getErrorContext } from './utils/errors';
 import { getSettings, onSettingsChange } from './features/settings';
+import { initializeApiConfig } from './utils/api-config';
 import { createUICommands } from './ui/commands';
 import { createPresenceProvider } from './ui/treeView';
 import { createActivityTracker } from './features/activity';
 import { createConflictResolver } from './features/conflict';
+import { createCursorRenderer } from './features/cursor-rendering';
+import { ChatPanel } from './ui/webview/chat/chat-panel';
+import { PresencePanel } from './ui/webview/presence/presence-panel';
+import { createSettingsPanel } from './ui/webview/settings/settings-panel';
+import { createShortcutsPanel } from './ui/webview/shortcuts/shortcuts-panel';
+import { createAnalyticsPanel } from './ui/webview/analytics/analytics-panel';
+import { createCodeReviewPanel } from './ui/webview/review/review-panel';
+import { createOAuthManager } from './features/oauth-login';
+import { createRecordingPanel } from './ui/webview/recording/recording-panel';
+import { createTerminalPanel } from './ui/webview/terminal/terminal-panel';
+import { createAVPanel } from './ui/webview/av/av-panel';
+import { createServerWizardPanel } from './ui/webview/wizard/server-wizard-panel';
 
 let isApplyingRemoteChange = false;
 
@@ -23,6 +36,9 @@ export async function activate(context: vscode.ExtensionContext) {
     const persistence = createPersistence(context);
     const store = createStateStore();
     const roomHistory = createRoomHistory(persistence);
+
+    // Initialize API configuration with dynamic server URL resolution
+    initializeApiConfig(store);
 
     // Load room history
     const history = await roomHistory.loadHistory();
@@ -42,13 +58,21 @@ export async function activate(context: vscode.ExtensionContext) {
     const socketClient = createSocketClient(settings.serverUrl);
     const activityTracker = createActivityTracker(store);
     const conflictResolver = createConflictResolver();
+    const cursorRenderer = createCursorRenderer(store);
     const handlers = createSocketHandlers(socketClient, store, persistence, activityTracker, conflictResolver);
+
+    // Initialize WebView panels
+    let chatPanel: ChatPanel | undefined;
+    let presencePanel: PresencePanel | undefined;
 
     // Cleanup on deactivate
     context.subscriptions.push({
       dispose: () => {
         activityTracker.dispose();
         conflictResolver.clearHistory();
+        cursorRenderer.dispose();
+        chatPanel?.dispose();
+        presencePanel?.dispose();
       },
     });
 
@@ -107,6 +131,92 @@ export async function activate(context: vscode.ExtensionContext) {
         if (choice === 'Copy Room ID') vscode.commands.executeCommand('pairtool.copyRoomId');
         if (choice === 'Stop Sharing Session') vscode.commands.executeCommand('pairtool.stopSharing');
       }),
+
+      // New panel commands
+      vscode.commands.registerCommand('pairtool.openChat', () => {
+        if (!store.getCurrentRoom()) {
+          vscode.window.showWarningMessage('Join a session first');
+          return;
+        }
+        ChatPanel.createOrShow(context.extensionUri, store, socketClient);
+      }),
+
+      vscode.commands.registerCommand('pairtool.openPresence', () => {
+        if (!store.getCurrentRoom()) {
+          vscode.window.showWarningMessage('Join a session first');
+          return;
+        }
+        PresencePanel.createOrShow(store);
+      }),
+
+      vscode.commands.registerCommand('pairtool.openSettings', () => {
+        createSettingsPanel();
+      }),
+
+      vscode.commands.registerCommand('pairtool.openShortcuts', () => {
+        createShortcutsPanel();
+      }),
+
+      vscode.commands.registerCommand('pairtool.openAnalytics', () => {
+        if (!store.getCurrentRoom()) {
+          vscode.window.showWarningMessage('Join a session first');
+          return;
+        }
+        const analyticsPanel = createAnalyticsPanel(context, store, socketClient);
+        analyticsPanel.show();
+      }),
+
+      vscode.commands.registerCommand('pairtool.openCodeReview', () => {
+        if (!store.getCurrentRoom()) {
+          vscode.window.showWarningMessage('Join a session first');
+          return;
+        }
+        const codeReviewPanel = createCodeReviewPanel(context, store, socketClient);
+        codeReviewPanel.show();
+      }),
+
+      vscode.commands.registerCommand('pairtool.loginGitHub', async () => {
+        const oauthManager = createOAuthManager(context, store);
+        await oauthManager.initiateGitHubLogin();
+      }),
+
+      vscode.commands.registerCommand('pairtool.loginGitLab', async () => {
+        const oauthManager = createOAuthManager(context, store);
+        await oauthManager.initiateGitLabLogin();
+      }),
+
+      vscode.commands.registerCommand('pairtool.logout', async () => {
+        const oauthManager = createOAuthManager(context, store);
+        await oauthManager.logout();
+      }),
+
+      vscode.commands.registerCommand('pairtool.openRecording', () => {
+        if (!store.getCurrentRoom()) {
+          vscode.window.showWarningMessage('Join a session first');
+          return;
+        }
+        createRecordingPanel(store, socketClient);
+      }),
+
+      vscode.commands.registerCommand('pairtool.openTerminal', () => {
+        if (!store.getCurrentRoom()) {
+          vscode.window.showWarningMessage('Join a session first');
+          return;
+        }
+        createTerminalPanel(store, socketClient);
+      }),
+
+      vscode.commands.registerCommand('pairtool.openAV', () => {
+        if (!store.getCurrentRoom()) {
+          vscode.window.showWarningMessage('Join a session first');
+          return;
+        }
+        createAVPanel(store, socketClient);
+      }),
+
+      vscode.commands.registerCommand('pairtool.setupServer', () => {
+        createServerWizardPanel();
+      })
     );
 
     // Setup status bar
@@ -125,12 +235,48 @@ export async function activate(context: vscode.ExtensionContext) {
       if (isConnected) {
         statusBar.text = '$(primitive-dot) Pair: Online';
         statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.remoteBackground');
+        logger.info('Connected to collaboration session');
       } else if (isReconnecting) {
         statusBar.text = '$(sync~spin) Pair: Reconnecting...';
       } else {
         statusBar.text = '$(alert) Pair: Offline';
         statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
       }
+    });
+
+    // Wire store events to WebView panels
+    store.on('message-added', (message: any) => {
+      chatPanel?.postMessage({
+        command: 'newMessage',
+        message: { ...message, isOwn: message.userId === settings.userName }
+      });
+    });
+
+    store.on('message-deleted', (messageId: string) => {
+      chatPanel?.postMessage({
+        command: 'messageDeleted',
+        messageId
+      });
+    });
+
+    store.on('message-reaction-updated', (data: any) => {
+      chatPanel?.postMessage({
+        command: 'reactionUpdated',
+        messageId: data.messageId,
+        reactions: data.reactions
+      });
+    });
+
+    store.on('collaborator-added', () => {
+      presencePanel?.refreshUI?.();
+    });
+
+    store.on('collaborator-updated', () => {
+      presencePanel?.refreshUI?.();
+    });
+
+    store.on('collaborator-removed', () => {
+      presencePanel?.refreshUI?.();
     });
 
     // Prompt for room

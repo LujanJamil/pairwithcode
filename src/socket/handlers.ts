@@ -22,6 +22,7 @@ export class SocketHandlers {
     this.setupConnectionHandlers();
     this.setupSyncHandlers();
     this.setupChatHandlers();
+    this.setupAnalyticsHandlers();
   }
 
   private setupConnectionHandlers(): void {
@@ -65,7 +66,15 @@ export class SocketHandlers {
 
   private setupSyncHandlers(): void {
     this.socket.onEvent(SocketEvents.REMOTE_FILE_SWITCH, async (data: any) => {
-      logger.debug('Remote file switch', { path: data.relativePath });
+      logger.debug('Remote file switch', { path: data.relativePath, userId: data.userId });
+
+      // Check if we're following a specific user
+      const followingUserId = this.store.getFollowingUser();
+      if (followingUserId && data.userId !== followingUserId) {
+        logger.debug('Ignoring file switch - not following this user', { userId: data.userId });
+        return; // Don't switch if tracking different user
+      }
+
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders) return;
 
@@ -127,7 +136,7 @@ export class SocketHandlers {
     });
 
     this.socket.onEvent(SocketEvents.REMOTE_CURSOR, (data: any) => {
-      logger.debug('Remote cursor received', { userId: data.userId, line: data.line });
+      logger.debug('Remote cursor received', { userId: data.userId, line: data.line, file: data.fileName });
       this.activityTracker?.recordCursorMove(data.userId);
 
       const userId = data.userId;
@@ -135,10 +144,17 @@ export class SocketHandlers {
       if (status) {
         this.store.updateCollaborator(userId, {
           cursorLine: data.line,
+          cursorColumn: data.character,
+          currentFile: data.fileName,
+          selectionStartLine: data.selectionStartLine,
+          selectionEndLine: data.selectionEndLine,
           status: 'active',
           lastActive: Date.now(),
         });
       }
+
+      // Emit event for cursor renderer to pick up
+      this.store.emit('remote-cursor-moved', data);
     });
 
     this.socket.onEvent(SocketEvents.REQUEST_INITIAL_STATE, (data: any) => {
@@ -180,18 +196,25 @@ export class SocketHandlers {
         timestamp: data.timestamp,
         status: 'delivered',
         reactions: [],
+        messageType: data.messageType || 'text',
       };
       this.store.addMessage(message);
+      this.store.emit('message-added', message);
     });
 
     this.socket.onEvent(SocketEvents.MESSAGE_DELETED, (data: any) => {
       logger.debug('Message deleted', { messageId: data.messageId });
       this.store.deleteMessage(data.messageId);
+      this.store.emit('message-deleted', data.messageId);
     });
 
     this.socket.onEvent(SocketEvents.MESSAGE_REACTION, (data: any) => {
       logger.debug('Message reaction', { messageId: data.messageId, emoji: data.emoji });
       this.store.updateMessageReaction(data.messageId, data.emoji, data.userId);
+      this.store.emit('message-reaction-updated', {
+        messageId: data.messageId,
+        reactions: this.store.getMessages().find(m => m.id === data.messageId)?.reactions || []
+      });
     });
 
     this.socket.onEvent(SocketEvents.MESSAGE_HISTORY, (data: any) => {
@@ -207,6 +230,38 @@ export class SocketHandlers {
           reactions: [],
         });
       }
+    });
+  }
+
+  setupAnalyticsHandlers(): void {
+    this.socket.onEvent('ANALYTICS_EVENT' as any, (data: any) => {
+      logger.debug('Analytics event', { type: data.eventType });
+      this.store.emit('analytics-event', data);
+    });
+
+    this.socket.onEvent('analytics:update' as any, (metrics: any) => {
+      logger.debug('Analytics update received', { editCount: metrics.editCount });
+      this.store.emit('analytics:update', metrics);
+    });
+
+    this.socket.onEvent('code-review:comment-added' as any, (data: any) => {
+      logger.debug('Code review comment added', { commentId: data.id });
+      this.store.emit('code-review:comment-added', data);
+    });
+
+    this.socket.onEvent('code-review:comment-resolved' as any, (data: any) => {
+      logger.debug('Code review comment resolved', { commentId: data.commentId });
+      this.store.emit('code-review:comment-resolved', data);
+    });
+
+    this.socket.onEvent('conflict:suggestion' as any, (data: any) => {
+      logger.debug('AI conflict resolution suggested', { filePath: data.filePath });
+      this.store.emit('conflict:suggestion', data);
+    });
+
+    this.socket.onEvent('audit:logged' as any, (data: any) => {
+      logger.debug('Audit event logged', { eventType: data.eventType });
+      this.store.emit('audit:logged', data);
     });
   }
 

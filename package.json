@@ -40,6 +40,78 @@
         "command": "pairtool.recentRooms",
         "title": "Pair Tool: Recent Rooms",
         "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.openChat",
+        "title": "Pair Tool: Open Chat",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.openPresence",
+        "title": "Pair Tool: Show Collaborators",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.openSettings",
+        "title": "Pair Tool: Settings",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.openShortcuts",
+        "title": "Pair Tool: Keyboard Shortcuts",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.openAnalytics",
+        "title": "Pair Tool: Session Analytics",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.openCodeReview",
+        "title": "Pair Tool: Code Review",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.loginGitHub",
+        "title": "Pair Tool: Sign in with GitHub",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.loginGitLab",
+        "title": "Pair Tool: Sign in with GitLab",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.logout",
+        "title": "Pair Tool: Logout",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.openRecording",
+        "title": "Pair Tool: Session Recording",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.openTerminal",
+        "title": "Pair Tool: Shared Terminal",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.openAV",
+        "title": "Pair Tool: Video Call",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.setupServer",
+        "title": "Pair Tool: Setup Self-Hosted Server",
+        "category": "Collaboration"
       }
     ],
     "configuration": {
@@ -133,6 +205,7 @@
 
 
   "dependencies": {
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "tweetnacl": "^1.0.3"
   }
 }

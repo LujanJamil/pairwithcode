@@ -7,6 +7,7 @@ export class StateStore extends EventEmitter {
   private vectorClock: VectorClock = {};
   private maxChangeHistory = 100;
   private maxMessages = 500;
+  private followingUserId: string | null = null;
 
   constructor() {
     super();
@@ -216,6 +217,40 @@ export class StateStore extends EventEmitter {
     if (hasGreater && !hasLess) return 1;
     if (hasLess && !hasGreater) return -1;
     return 0;
+  }
+
+  setFollowingUser(userId: string): void {
+    this.followingUserId = userId;
+    this.emit('following-changed', { userId });
+    logger.debug('Now following user', { userId });
+  }
+
+  getFollowingUser(): string | null {
+    return this.followingUserId;
+  }
+
+  clearFollowingUser(): void {
+    this.followingUserId = null;
+    this.emit('following-cleared');
+    logger.debug('Stopped following user');
+  }
+
+  setUser(user: any): void {
+    this.state.currentUser = user;
+    this.emit('user-changed', { user });
+  }
+
+  getUser(): any {
+    return this.state.currentUser;
+  }
+
+  setUserToken(token: string): void {
+    this.state.userToken = token;
+    this.emit('token-changed', { token });
+  }
+
+  getUserToken(): string | undefined {
+    return this.state.userToken;
   }
 
   clear(): void {
