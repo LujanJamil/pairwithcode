@@ -1,10 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
+import type { IncomingHttpHeaders } from 'http';
+import type { ParamsDictionary, Query } from 'express-serve-static-core';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export interface AuthRequest extends Request {
+export interface AuthRequest<P = ParamsDictionary, ResBody = any, ReqBody = any, ReqQuery = Query> extends Request<P, ResBody, ReqBody, ReqQuery> {
+  headers: IncomingHttpHeaders;
+  params: P;
+  body: ReqBody;
+  query: ReqQuery;
   user?: {
     id: string;
     email: string;

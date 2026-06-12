@@ -13,7 +13,6 @@ const schema = joi_1.default.object({
         .default('development'),
     PORT: joi_1.default.number().port().default(3000),
     CORS_ORIGIN: joi_1.default.string().default('http://localhost:3000'),
-    DB_HOST: joi_1.default.string().required(),
     DB_PORT: joi_1.default.number().port().default(5432),
     DB_USER: joi_1.default.string().required(),
     DB_PASSWORD: joi_1.default.string().required(),
