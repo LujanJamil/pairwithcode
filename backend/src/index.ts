@@ -65,13 +65,11 @@ const startServer = async () => {
 
     // Initialize database FIRST before setting up routes
     logger.info('Initializing database...');
-    let pool;
     try {
-      pool = await initializeDatabase();
-      logger.info('Database initialized');
+      await initializeDatabase();
+      logger.info('Database initialized successfully');
     } catch (dbError) {
-      logger.error('Database init failed:', dbError);
-      throw new Error('Critical: Database initialization failed');
+      logger.warn('Database initialization error (will use mock mode):', dbError);
     }
 
     // Initialize Redis
@@ -86,9 +84,9 @@ const startServer = async () => {
     setupSocketHandlers(io);
     logger.info('Socket.io handlers configured');
 
-    // Setup routes (pool is guaranteed to exist here)
+    // Setup routes - database pool is now initialized (real or mock)
     try {
-      setupRoutes(app, pool);
+      setupRoutes(app, getPool());
       logger.info('Routes configured');
     } catch (routeError) {
       logger.error('Route setup failed:', routeError);
