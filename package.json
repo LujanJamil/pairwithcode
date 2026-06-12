@@ -147,7 +147,7 @@
       "properties": {
         "pairWithCode.serverUrl": {
           "type": "string",
-          "default": "https://pairwithcode.onrender.com",
+          "default": "https://pair-with-code-backend.onrender.com",
           "description": "Server URL for collaboration. Change this to point to your own server.",
           "scope": "application"
         },
