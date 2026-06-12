@@ -1,0 +1,242 @@
+{
+  "name": "pair-with-code",
+  "displayName": "Pair With Code PRO",
+  "publisher": "LJ-Tech",
+  "version": "1.0.3",
+  "description": "Real-time collaborative IDE with instant pair programming, code review, live analytics, and AI conflict resolution. Code together globally.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LujanJamil/pairwithcode"
+  },
+  "homepage": "https://pairwithcode.dev",
+  "bugs": {
+    "url": "https://github.com/LujanJamil/pairwithcode/issues"
+  },
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#6366f1",
+    "theme": "dark",
+    "preview": false
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Collaboration",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "collaboration",
+    "pair-programming",
+    "real-time",
+    "code-review",
+    "analytics",
+    "socket.io",
+    "live-share",
+    "coding",
+    "remote-work",
+    "team-productivity"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "pairtool.copyRoomId",
+        "title": "Pair With Code: Copy Room ID",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.stopSharing",
+        "title": "Pair With Code: Stop Sharing Session",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.menu",
+        "title": "Pair With Code: Menu",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.joinRoom",
+        "title": "Pair With Code: Join Room",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.recentRooms",
+        "title": "Pair With Code: Recent Rooms",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.openChat",
+        "title": "Pair With Code: Open Chat",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.openPresence",
+        "title": "Pair With Code: Show Collaborators",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.openSettings",
+        "title": "Pair With Code: Settings",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.openShortcuts",
+        "title": "Pair With Code: Keyboard Shortcuts",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.openAnalytics",
+        "title": "Pair With Code: Session Analytics",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.openCodeReview",
+        "title": "Pair With Code: Code Review",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.loginGitHub",
+        "title": "Pair With Code: Sign in with GitHub",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.loginGitLab",
+        "title": "Pair With Code: Sign in with GitLab",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.logout",
+        "title": "Pair With Code: Logout",
+        "category": "Collaboration"
+      },
+      {
+        "command": "pairtool.openRecording",
+        "title": "Pair With Code: Session Recording",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.openTerminal",
+        "title": "Pair With Code: Shared Terminal",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.openAV",
+        "title": "Pair With Code: Video Call",
+        "category": "Collaboration",
+        "when": "pairWithCode.isConnected"
+      },
+      {
+        "command": "pairtool.setupServer",
+        "title": "Pair With Code: Setup Self-Hosted Server",
+        "category": "Collaboration"
+      }
+    ],
+    "configuration": {
+      "title": "Pair With Code",
+      "properties": {
+        "pairWithCode.serverUrl": {
+          "type": "string",
+          "default": "https://pairwithcode.onrender.com",
+          "description": "Server URL for collaboration. Change this to point to your own server.",
+          "scope": "application"
+        },
+        "pairWithCode.userName": {
+          "type": "string",
+          "default": "",
+          "description": "Your display name in collaboration sessions. Leave blank to use your Git username.",
+          "scope": "application"
+        },
+        "pairWithCode.autoJoin": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically join the last room on startup.",
+          "scope": "application"
+        },
+        "pairWithCode.followMode": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically follow partner's file switches.",
+          "scope": "application"
+        },
+        "pairWithCode.autoReconnect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically reconnect on connection loss.",
+          "scope": "application"
+        },
+        "pairWithCode.theme": {
+          "type": "string",
+          "enum": [
+            "light",
+            "dark",
+            "auto"
+          ],
+          "default": "auto",
+          "description": "Chat and UI theme preference.",
+          "scope": "application"
+        },
+        "pairWithCode.showActivityIndicators": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show typing indicators and activity highlights.",
+          "scope": "application"
+        },
+        "pairWithCode.maxChatHistory": {
+          "type": "number",
+          "default": 500,
+          "minimum": 50,
+          "maximum": 5000,
+          "description": "Maximum number of chat messages to keep per session.",
+          "scope": "application"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "pair-collaboration",
+          "title": "Pair Session",
+          "icon": "resources/activitybar.svg"
+        }
+      ]
+    },
+    "views": {
+      "pair-collaboration": [
+        {
+          "id": "pairPresence",
+          "name": "Active Collaborators",
+          "when": "pairWithCode.isConnected"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.19.43",
+    "@types/vscode": "^1.85.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.3",
+    "tweetnacl": "^1.0.3"
+  }
+}

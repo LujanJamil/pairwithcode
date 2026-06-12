@@ -1,0 +1,74 @@
+# Production Infrastructure Blueprint for Pair With Code PRO
+services:
+  # 1. Node.js Backend Web Server API Instance
+  - type: web
+    name: pairwithcode-backend
+    runtime: node
+    plan: starter
+    buildCommand: cd backend && npm ci && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: CORS_ORIGIN
+        value: https://visualstudio.com
+      # Map PostgreSQL credentials directly into Joi validated parameters
+      - key: DB_HOST
+        fromDatabase:
+          name: pairwithcode-db
+          property: host
+      - key: DB_PORT
+        value: 5432
+      - key: DB_USER
+        fromDatabase:
+          name: pairwithcode-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: pairwithcode-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: pairwithcode-db
+          property: database
+      - key: DB_SSL
+        value: true # Critical: Managed database instances enforce SSL connection channels
+      # Map Redis coordinates directly into Joi validated parameters
+      - key: REDIS_HOST
+        fromService:
+          type: keyvalue
+          name: pairwithcode-cache
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: keyvalue
+          name: pairwithcode-cache
+          property: port
+      - key: REDIS_PASSWORD
+        fromService:
+          type: keyvalue
+          name: pairwithcode-cache
+          property: password
+      - key: REDIS_DB
+        value: 0
+      # Generate unique production secrets
+      - key: JWT_SECRET
+        generateValue: true
+    disk:
+      name: logs
+      mountPath: /app/logs
+      sizeGB: 1
+
+# 2. Managed PostgreSQL Database Definitions
+databases:
+  - name: pairwithcode-db
+    plan: flexible
+    ipAllowList: [] # Strict internal routing only
+
+# 3. Managed Redis Cache Cloud Instance
+keyvalues:
+  - name: pairwithcode-cache
+    plan: free
+    ipAllowList: [] # Strict internal routing only
