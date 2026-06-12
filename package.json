@@ -2,17 +2,40 @@
   "name": "pair-with-code",
   "displayName": "Pair With Code PRO",
   "publisher": "LJ-Tech",
-  "version": "1.0.2",
-  "description": "Real-time collaborative coding with private rooms, synchronized typing, and multi-cursor tracking.",
+  "version": "1.0.3",
+  "description": "Real-time collaborative IDE with instant pair programming, code review, live analytics, and AI conflict resolution. Code together globally.",
   "repository": {
     "type": "git",
-    "url": "https://github.com"
+    "url": "https://github.com/LujanJamil/pairwithcode"
+  },
+  "homepage": "https://pairwithcode.dev",
+  "bugs": {
+    "url": "https://github.com/LujanJamil/pairwithcode/issues"
+  },
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#6366f1",
+    "theme": "dark"
   },
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
+    "Collaboration",
+    "Visualization",
     "Other"
+  ],
+  "keywords": [
+    "collaboration",
+    "pair-programming",
+    "real-time",
+    "code-review",
+    "analytics",
+    "socket.io",
+    "live-share",
+    "coding",
+    "remote-work",
+    "team-productivity"
   ],
   "activationEvents": [
     "onStartupFinished"
