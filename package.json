@@ -22,7 +22,6 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Chat",
     "Visualization",
     "Other"
   ],
@@ -46,100 +45,100 @@
     "commands": [
       {
         "command": "pairtool.copyRoomId",
-        "title": "Pair With Code: Copy Room ID",
-        "category": "Collaboration"
+        "title": "Copy Room ID",
+        "category": "Pair With Code"
       },
       {
         "command": "pairtool.stopSharing",
-        "title": "Pair With Code: Stop Sharing Session",
-        "category": "Collaboration"
+        "title": "Stop Sharing Session",
+        "category": "Pair With Code"
       },
       {
         "command": "pairtool.menu",
-        "title": "Pair With Code: Menu",
-        "category": "Collaboration"
+        "title": "Menu",
+        "category": "Pair With Code"
       },
       {
         "command": "pairtool.joinRoom",
-        "title": "Pair With Code: Join Room",
-        "category": "Collaboration"
+        "title": "Join Room",
+        "category": "Pair With Code"
       },
       {
         "command": "pairtool.recentRooms",
-        "title": "Pair With Code: Recent Rooms",
-        "category": "Collaboration"
+        "title": "Recent Rooms",
+        "category": "Pair With Code"
       },
       {
         "command": "pairtool.openChat",
-        "title": "Pair With Code: Open Chat",
-        "category": "Collaboration",
+        "title": "Open Chat",
+        "category": "Pair With Code",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.openPresence",
-        "title": "Pair With Code: Show Collaborators",
-        "category": "Collaboration",
+        "title": "Show Collaborators",
+        "category": "Pair With Code",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.openSettings",
-        "title": "Pair With Code: Settings",
-        "category": "Collaboration"
+        "title": "Settings",
+        "category": "Pair With Code"
       },
       {
         "command": "pairtool.openShortcuts",
-        "title": "Pair With Code: Keyboard Shortcuts",
-        "category": "Collaboration"
+        "title": "Keyboard Shortcuts",
+        "category": "Pair With Code"
       },
       {
         "command": "pairtool.openAnalytics",
-        "title": "Pair With Code: Session Analytics",
-        "category": "Collaboration",
+        "title": "Session Analytics",
+        "category": "Pair With Code",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.openCodeReview",
-        "title": "Pair With Code: Code Review",
-        "category": "Collaboration",
+        "title": "Code Review",
+        "category": "Pair With Code",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.loginGitHub",
-        "title": "Pair With Code: Sign in with GitHub",
-        "category": "Collaboration"
+        "title": "Sign in with GitHub",
+        "category": "Pair With Code"
       },
       {
         "command": "pairtool.loginGitLab",
-        "title": "Pair With Code: Sign in with GitLab",
-        "category": "Collaboration"
+        "title": "Sign in with GitLab",
+        "category": "Pair With Code"
       },
       {
         "command": "pairtool.logout",
-        "title": "Pair With Code: Logout",
-        "category": "Collaboration"
+        "title": "Logout",
+        "category": "Pair With Code"
       },
       {
         "command": "pairtool.openRecording",
-        "title": "Pair With Code: Session Recording",
-        "category": "Collaboration",
+        "title": "Session Recording",
+        "category": "Pair With Code",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.openTerminal",
-        "title": "Pair With Code: Shared Terminal",
-        "category": "Collaboration",
+        "title": "Shared Terminal",
+        "category": "Pair With Code",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.openAV",
-        "title": "Pair With Code: Video Call",
-        "category": "Collaboration",
+        "title": "Video Call",
+        "category": "Pair With Code",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.setupServer",
-        "title": "Pair With Code: Setup Self-Hosted Server",
-        "category": "Collaboration"
+        "title": "Setup Self-Hosted Server",
+        "category": "Pair With Code"
       }
     ],
     "configuration": {
