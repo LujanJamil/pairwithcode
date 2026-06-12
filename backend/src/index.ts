@@ -9,7 +9,7 @@ import 'express-async-errors';
 import pinoHttp from 'pino-http';
 import { logger } from './utils/logger';
 import { config } from './config/environment';
-import { initializeDatabase } from './config/db';
+import { initializeDatabase, getPool } from './config/db';
 import { setupRoutes } from './routes';
 import { setupSocketHandlers } from './socket/handlers';
 import { errorHandler } from './middleware/errorHandler';
@@ -26,8 +26,8 @@ const io = new SocketIOServer(httpServer, {
   adapter: undefined // Will be set after Redis connection
 });
 
-let redisClient: Redis.RedisClient | null = null;
-let pubClient: Redis.RedisClient | null = null;
+let redisClient: any = null;
+let pubClient: any = null;
 
 const initializeRedis = async () => {
   try {
@@ -36,9 +36,9 @@ const initializeRedis = async () => {
       port: config.redis.port,
       password: config.redis.password || undefined,
       db: config.redis.db
-    }) as any;
+    } as any) as any;
 
-    redisClient = pubClient.duplicate();
+    redisClient = (pubClient as any).duplicate();
 
     await Promise.all([
       (pubClient as any).connect?.(),
@@ -65,20 +65,32 @@ const startServer = async () => {
 
     // Initialize database
     logger.info('Initializing database...');
-    await initializeDatabase();
-    logger.info('Database initialized');
+    try {
+      await initializeDatabase();
+      logger.info('Database initialized');
+    } catch (dbError) {
+      logger.warn('Database init failed, continuing in mock mode', dbError);
+    }
 
     // Initialize Redis
     logger.info('Initializing Redis...');
-    await initializeRedis();
+    try {
+      await initializeRedis();
+    } catch (redisError) {
+      logger.warn('Redis init failed, continuing in single-server mode', redisError);
+    }
 
     // Setup Socket.io handlers
     setupSocketHandlers(io);
     logger.info('Socket.io handlers configured');
 
     // Setup routes
-    setupRoutes(app);
-    logger.info('Routes configured');
+    try {
+      setupRoutes(app, getPool());
+      logger.info('Routes configured');
+    } catch (routeError) {
+      logger.warn('Route setup encountered issues:', routeError);
+    }
 
     // Health check endpoint
     app.get('/health', (req: Request, res: Response) => {

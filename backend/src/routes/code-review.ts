@@ -1,8 +1,10 @@
 import { Router } from 'express';
-import { codeReviewService } from '../services/code-review';
+import { CodeReviewService } from '../services/code-review';
 import { logger } from '../utils/logger';
+import { getPool } from '../config/db';
 
 const router = Router();
+const codeReviewService = new CodeReviewService(getPool());
 
 // POST /api/code-review/comments - Create new code review comment
 router.post('/comments', async (req, res) => {
@@ -21,7 +23,9 @@ router.post('/comments', async (req, res) => {
       userName: userName || 'Anonymous',
       content,
       type,
-      severity
+      severity,
+      status: 'open',
+      replies: []
     });
 
     res.status(201).json(comment);

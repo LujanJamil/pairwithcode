@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { db } from '../config/db';
+import { query } from '../config/db';
 import { logger } from '../utils/logger';
 
 const router = Router();
@@ -9,7 +9,7 @@ router.get('/sessions/:sessionId', async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
 
-    const debugResult = await db.query(
+    const debugResult = await query(
       `SELECT ds.*, u.username FROM debug_sessions ds
        LEFT JOIN users u ON ds.user_id = u.id
        WHERE ds.session_id = $1
@@ -17,7 +17,7 @@ router.get('/sessions/:sessionId', async (req: Request, res: Response) => {
       [sessionId]
     );
 
-    const breakpointsResult = await db.query(
+    const breakpointsResult = await query(
       `SELECT * FROM debug_breakpoints
        WHERE session_id = $1
        ORDER BY file_path, line_number`,
@@ -39,7 +39,7 @@ router.get('/sessions/:sessionId/breakpoints', async (req: Request, res: Respons
   try {
     const { sessionId } = req.params;
 
-    const result = await db.query(
+    const result = await query(
       `SELECT * FROM debug_breakpoints
        WHERE session_id = $1
        ORDER BY file_path, line_number`,
@@ -58,7 +58,7 @@ router.get('/sessions/:sessionId/files/:filePath/breakpoints', async (req: Reque
   try {
     const { sessionId, filePath } = req.params;
 
-    const result = await db.query(
+    const result = await query(
       `SELECT * FROM debug_breakpoints
        WHERE session_id = $1 AND file_path = $2
        ORDER BY line_number`,
@@ -77,11 +77,11 @@ router.post('/breakpoints', async (req: Request, res: Response) => {
   try {
     const { sessionId, filePath, lineNumber } = req.body;
 
-    const result = await db.query(
+    const result = await query(
       `INSERT INTO debug_breakpoints (session_id, file_path, line_number, user_id, created_at)
        VALUES ($1, $2, $3, $4, NOW())
        RETURNING *`,
-      [sessionId, filePath, lineNumber, req.user?.id || 'anonymous']
+      [sessionId, filePath, lineNumber, (req.user as any)?.id || 'anonymous']
     );
 
     res.status(201).json({ breakpoint: result.rows[0] });
@@ -96,7 +96,7 @@ router.delete('/breakpoints/:breakpointId', async (req: Request, res: Response) 
   try {
     const { breakpointId } = req.params;
 
-    await db.query(
+    await query(
       `DELETE FROM debug_breakpoints WHERE id = $1`,
       [breakpointId]
     );

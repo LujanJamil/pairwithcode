@@ -52,8 +52,8 @@ router.post('/github', async (req, res) => {
     }
 
     // Store state in session for validation during callback
-    req.session = req.session || {};
-    req.session.oauthState = { github: state, timestamp: Date.now() };
+    (req as any).session = (req as any).session || {};
+    (req as any).session.oauthState = { github: state, timestamp: Date.now() };
 
     const redirectUri = process.env.GITHUB_REDIRECT_URI || 'http://localhost:3000/api/auth/github/callback';
     const scope = 'user:email,read:user';
@@ -138,8 +138,8 @@ router.post('/gitlab', async (req, res) => {
     }
 
     // Store state in session for validation during callback
-    req.session = req.session || {};
-    req.session.oauthState = { gitlab: state, timestamp: Date.now() };
+    (req as any).session = (req as any).session || {};
+    (req as any).session.oauthState = { gitlab: state, timestamp: Date.now() };
 
     const redirectUri = process.env.GITLAB_REDIRECT_URI || 'http://localhost:3000/api/auth/gitlab/callback';
     const scope = 'read_user,read_api';
@@ -309,3 +309,4 @@ router.get('/callback/status', (req, res) => {
 });
 
 export default router;
+

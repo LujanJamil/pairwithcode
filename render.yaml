@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: pairwithcode-backend
+    runtime: node
+    buildCommand: cd backend && npm ci && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DB_HOST
+        fromDatabase:
+          name: pairwithcode-db
+          property: host
+      - key: DB_PORT
+        value: 5432
+      - key: DB_USER
+        fromDatabase:
+          name: pairwithcode-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: pairwithcode-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: pairwithcode-db
+          property: database
+      - key: REDIS_HOST
+        value: redis-pairwithcode.onrender.com
+      - key: REDIS_PORT
+        value: 6379
+      - key: JWT_SECRET
+        sync: false
+    disk:
+      name: logs
+      mountPath: /app/logs
+      sizeGB: 1
+
+  - type: pserv
+    name: pairwithcode-db
+    ipAllowList: []
+
+  - type: redis
+    name: redis-pairwithcode
+    ipAllowList: []

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { db } from '../config/db';
+import { query } from '../config/db';
 import { logger } from '../utils/logger';
 import crypto from 'crypto';
 
@@ -19,7 +19,7 @@ router.post('/exchange', async (req: Request, res: Response) => {
     hash.update(publicKey);
     const fingerprint = hash.digest('hex').substring(0, 16);
 
-    const result = await db.query(
+    const result = await query(
       `INSERT INTO user_encryption_keys (user_id, session_id, public_key, provider, fingerprint, created_at)
        VALUES ($1, $2, $3, $4, $5, NOW())
        ON CONFLICT (user_id, session_id) DO UPDATE SET public_key = $3, fingerprint = $5
@@ -45,7 +45,7 @@ router.get('/users/:userId/sessions/:sessionId', async (req: Request, res: Respo
   try {
     const { userId, sessionId } = req.params;
 
-    const result = await db.query(
+    const result = await query(
       `SELECT public_key, fingerprint, provider FROM user_encryption_keys
        WHERE user_id = $1 AND session_id = $2
        ORDER BY created_at DESC LIMIT 1`,
@@ -72,7 +72,7 @@ router.get('/sessions/:sessionId/keys', async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
 
-    const result = await db.query(
+    const result = await query(
       `SELECT user_id, public_key, fingerprint, provider, created_at
        FROM user_encryption_keys
        WHERE session_id = $1
@@ -99,7 +99,7 @@ router.post('/verify-fingerprint', async (req: Request, res: Response) => {
   try {
     const { sessionId, userId, fingerprint } = req.body;
 
-    const result = await db.query(
+    const result = await query(
       `SELECT fingerprint FROM user_encryption_keys
        WHERE session_id = $1 AND user_id = $2`,
       [sessionId, userId]
@@ -126,7 +126,7 @@ router.delete('/users/:userId/sessions/:sessionId', async (req: Request, res: Re
   try {
     const { userId, sessionId } = req.params;
 
-    await db.query(
+    await query(
       `DELETE FROM user_encryption_keys
        WHERE user_id = $1 AND session_id = $2`,
       [userId, sessionId]

@@ -1,6 +1,6 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { logger } from '../utils/logger';
-import { db } from '../config/db';
+import { query } from '../config/db';
 
 interface RoomSession {
   id: string;
@@ -64,7 +64,7 @@ export const setupSocketHandlers = (io: SocketIOServer) => {
       const { roomName, startTime } = data;
 
       try {
-        const result = await db.query(
+        const result = await query(
           `INSERT INTO session_recordings (session_id, status, started_at, created_at)
            VALUES ($1, $2, $3, NOW()) RETURNING id`,
           [roomName, 'recording', new Date(startTime)]
@@ -83,7 +83,7 @@ export const setupSocketHandlers = (io: SocketIOServer) => {
 
       try {
         // Get active recording
-        const result = await db.query(
+        const result = await query(
           `SELECT id FROM session_recordings
            WHERE session_id = $1 AND status = 'recording'
            ORDER BY created_at DESC LIMIT 1`,
@@ -94,7 +94,7 @@ export const setupSocketHandlers = (io: SocketIOServer) => {
           const recordingId = result.rows[0].id;
 
           // Store frames (would be stored as JSON or in S3)
-          await db.query(
+          await query(
             `UPDATE session_recordings
              SET frames = COALESCE(frames, '[]'::jsonb) || $1
              WHERE id = $2`,
@@ -112,14 +112,14 @@ export const setupSocketHandlers = (io: SocketIOServer) => {
       const { roomName, duration } = data;
 
       try {
-        await db.query(
+        await query(
           `UPDATE session_recordings
            SET status = 'completed', ended_at = NOW(), duration = $1
            WHERE session_id = $2 AND status = 'recording'`,
           [duration, roomName]
         );
 
-        const result = await db.query(
+        const result = await query(
           `SELECT id FROM session_recordings
            WHERE session_id = $1
            ORDER BY created_at DESC LIMIT 1`,
@@ -159,7 +159,7 @@ export const setupSocketHandlers = (io: SocketIOServer) => {
       const { roomName, sessionName, state } = data;
 
       try {
-        await db.query(
+        await query(
           `INSERT INTO debug_sessions (session_id, user_id, state, session_name, created_at)
            VALUES ($1, $2, $3, $4, NOW())
            ON CONFLICT (session_id, user_id) DO UPDATE SET state = $3`,
@@ -179,7 +179,7 @@ export const setupSocketHandlers = (io: SocketIOServer) => {
       try {
         // Store breakpoints in database
         for (const bp of added) {
-          await db.query(
+          await query(
             `INSERT INTO debug_breakpoints (session_id, file_path, line_number, user_id, created_at)
              VALUES ($1, $2, $3, $4, NOW())`,
             [roomName, bp.file, bp.line, socket.id]
@@ -187,7 +187,7 @@ export const setupSocketHandlers = (io: SocketIOServer) => {
         }
 
         for (const bp of removed) {
-          await db.query(
+          await query(
             `DELETE FROM debug_breakpoints
              WHERE session_id = $1 AND file_path = $2 AND line_number = $3`,
             [roomName, bp.file, bp.line]
@@ -254,7 +254,7 @@ export const setupSocketHandlers = (io: SocketIOServer) => {
       const { roomName, publicKey, provider } = data;
 
       try {
-        await db.query(
+        await query(
           `INSERT INTO user_encryption_keys (user_id, room_id, public_key, provider, created_at)
            VALUES ($1, $2, $3, $4, NOW())
            ON CONFLICT (user_id, room_id) DO UPDATE SET public_key = $3`,

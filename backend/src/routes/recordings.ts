@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { db } from '../config/db';
+import { query } from '../config/db';
 import { logger } from '../utils/logger';
 
 const router = Router();
@@ -9,7 +9,7 @@ router.get('/sessions/:sessionId', async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
 
-    const result = await db.query(
+    const result = await query(
       `SELECT id, session_id, status, duration, frames, started_at, created_at
        FROM session_recordings
        WHERE session_id = $1
@@ -39,7 +39,7 @@ router.get('/:recordingId', async (req: Request, res: Response) => {
   try {
     const { recordingId } = req.params;
 
-    const result = await db.query(
+    const result = await query(
       `SELECT id, session_id, status, frames, duration, created_at
        FROM session_recordings
        WHERE id = $1`,
@@ -81,7 +81,7 @@ router.delete('/:recordingId', async (req: Request, res: Response) => {
   try {
     const { recordingId } = req.params;
 
-    await db.query(
+    await query(
       `DELETE FROM session_recordings WHERE id = $1`,
       [recordingId]
     );
@@ -99,7 +99,7 @@ router.post('/frames/batch', async (req: Request, res: Response) => {
   try {
     const { recordingId, frames } = req.body;
 
-    await db.query(
+    await query(
       `UPDATE session_recordings
        SET frames = COALESCE(frames, '[]'::jsonb) || $1
        WHERE id = $2`,

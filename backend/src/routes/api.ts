@@ -144,7 +144,7 @@ export function createAPIRouter(pool: Pool): Router {
         RETURNING id, start_time
       `;
       const result = await pool.query(query, [sessionId, userId]);
-      await auditLogger.log(userId, 'recording_start', 'recording', result.rows[0].id, req.ip || '', req.get('user-agent') || '');
+      await auditLogger.log(userId, 'create_session', 'recording', result.rows[0].id, req.ip || '', req.get('user-agent') || '');
       res.json({ recordingId: result.rows[0].id, startTime: result.rows[0].start_time });
     } catch (error) {
       res.status(500).json({ error: 'Failed to start recording' });
@@ -161,7 +161,7 @@ export function createAPIRouter(pool: Pool): Router {
         RETURNING id, end_time
       `;
       const result = await pool.query(query, [recordingId]);
-      await auditLogger.log(userId, 'recording_stop', 'recording', recordingId, req.ip || '', req.get('user-agent') || '');
+      await auditLogger.log(userId, 'leave_session', 'recording', recordingId, req.ip || '', req.get('user-agent') || '');
       res.json({ recordingId, endTime: result.rows[0].end_time });
     } catch (error) {
       res.status(500).json({ error: 'Failed to stop recording' });
@@ -191,7 +191,7 @@ export function createAPIRouter(pool: Pool): Router {
     try {
       const { sessionId, userId, shell } = req.body;
       res.json({ success: true, ptyId: `pty-${Date.now()}`, shell: shell || 'bash' });
-      await auditLogger.log(userId, 'terminal_connect', 'terminal', sessionId, req.ip || '', req.get('user-agent') || '');
+      await auditLogger.log(userId, 'join_session', 'terminal', sessionId, req.ip || '', req.get('user-agent') || '');
     } catch (error) {
       res.status(500).json({ error: 'Failed to connect terminal' });
     }
@@ -200,7 +200,7 @@ export function createAPIRouter(pool: Pool): Router {
   router.post('/terminal/disconnect', async (req: Request, res: Response) => {
     try {
       const { ptyId, userId } = req.body;
-      await auditLogger.log(userId, 'terminal_disconnect', 'terminal', ptyId, req.ip || '', req.get('user-agent') || '');
+      await auditLogger.log(userId, 'leave_session', 'terminal', ptyId, req.ip || '', req.get('user-agent') || '');
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: 'Failed to disconnect terminal' });
@@ -236,7 +236,7 @@ export function createAPIRouter(pool: Pool): Router {
         RETURNING id, name, email
       `;
       const result = await pool.query(query, [req.params.userId, name, email]);
-      await auditLogger.log(req.params.userId, 'settings_update', 'user', req.params.userId, req.ip || '', req.get('user-agent') || '');
+      await auditLogger.log(req.params.userId, 'settings_change', 'user', req.params.userId, req.ip || '', req.get('user-agent') || '');
       res.json(result.rows[0]);
     } catch (error) {
       res.status(500).json({ error: 'Failed to update settings' });
@@ -250,3 +250,4 @@ export function createAPIRouter(pool: Pool): Router {
 
   return router;
 }
+
