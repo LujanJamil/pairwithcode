@@ -1,10 +1,11 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
+import { Pool } from 'pg';
 import { CodeReviewService } from '../services/code-review';
 import { logger } from '../utils/logger';
-import { getPool } from '../config/db';
 
-const router = Router();
-const codeReviewService = new CodeReviewService(getPool());
+export function createCodeReviewRoutes(pool: Pool): Router {
+  const router = Router();
+  const codeReviewService = new CodeReviewService(pool);
 
 // POST /api/code-review/comments - Create new code review comment
 router.post('/comments', async (req, res) => {
@@ -142,4 +143,5 @@ router.get('/sessions/:sessionId/report', async (req, res) => {
   }
 });
 
-export default router;
+  return router;
+}

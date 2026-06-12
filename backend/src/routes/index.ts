@@ -4,7 +4,7 @@ import authRoutes from './auth';
 import messageRoutes from './messages';
 import sessionRoutes from './sessions';
 import analyticsRoutes from './analytics';
-import codeReviewRoutes from './code-review';
+import { createCodeReviewRoutes } from './code-review';
 import recordingsRoutes from './recordings';
 import debugRoutes from './debug';
 import encryptionRoutes from './encryption';
@@ -18,7 +18,7 @@ export const setupRoutes = (app: Express, pool: Pool) => {
   app.use('/api/messages', messageRoutes);
   app.use('/api/sessions', sessionRoutes);
   app.use('/api/analytics', analyticsRoutes);
-  app.use('/api/code-review', codeReviewRoutes);
+  app.use('/api/code-review', createCodeReviewRoutes(pool));
   app.use('/api/recordings', recordingsRoutes);
   app.use('/api/debug', debugRoutes);
   app.use('/api/keys', encryptionRoutes);
