@@ -8,7 +8,7 @@ import { createCodeReviewRoutes } from './code-review';
 import recordingsRoutes from './recordings';
 import debugRoutes from './debug';
 import encryptionRoutes from './encryption';
-import createEnterpriseRoutes from './enterprise';
+import { createEnterpriseRoutes } from './enterprise';
 import { logger } from '../utils/logger';
 
 export const setupRoutes = (app: Express, pool: Pool) => {
