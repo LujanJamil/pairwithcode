@@ -1,7 +1,10 @@
+# Production Infrastructure Blueprint for Pair With Code PRO
 services:
+  # 1. Node.js Backend Web Server API Instance
   - type: web
     name: pairwithcode-backend
     runtime: node
+    plan: starter
     buildCommand: cd backend && npm ci && npm run build
     startCommand: cd backend && npm start
     envVars:
@@ -9,6 +12,9 @@ services:
         value: production
       - key: PORT
         value: 3000
+      - key: CORS_ORIGIN
+        value: https://visualstudio.com
+      # Map PostgreSQL credentials directly into Joi validated parameters
       - key: DB_HOST
         fromDatabase:
           name: pairwithcode-db
@@ -27,21 +33,42 @@ services:
         fromDatabase:
           name: pairwithcode-db
           property: database
+      - key: DB_SSL
+        value: true # Critical: Managed database instances enforce SSL connection channels
+      # Map Redis coordinates directly into Joi validated parameters
       - key: REDIS_HOST
-        value: redis-pairwithcode.onrender.com
+        fromService:
+          type: keyvalue
+          name: pairwithcode-cache
+          property: host
       - key: REDIS_PORT
-        value: 6379
+        fromService:
+          type: keyvalue
+          name: pairwithcode-cache
+          property: port
+      - key: REDIS_PASSWORD
+        fromService:
+          type: keyvalue
+          name: pairwithcode-cache
+          property: password
+      - key: REDIS_DB
+        value: 0
+      # Generate unique production secrets
       - key: JWT_SECRET
-        sync: false
+        generateValue: true
     disk:
       name: logs
       mountPath: /app/logs
       sizeGB: 1
 
-  - type: pserv
-    name: pairwithcode-db
-    ipAllowList: []
+# 2. Managed PostgreSQL Database Definitions
+databases:
+  - name: pairwithcode-db
+    plan: flexible
+    ipAllowList: [] # Strict internal routing only
 
-  - type: redis
-    name: redis-pairwithcode
-    ipAllowList: []
+# 3. Managed Redis Cache Cloud Instance
+keyvalues:
+  - name: pairwithcode-cache
+    plan: free
+    ipAllowList: [] # Strict internal routing only

@@ -15,7 +15,8 @@
   "icon": "images/icon.png",
   "galleryBanner": {
     "color": "#6366f1",
-    "theme": "dark"
+    "theme": "dark",
+    "preview": false
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -45,94 +46,94 @@
     "commands": [
       {
         "command": "pairtool.copyRoomId",
-        "title": "Pair Tool: Copy Room ID",
+        "title": "Pair With Code: Copy Room ID",
         "category": "Collaboration"
       },
       {
         "command": "pairtool.stopSharing",
-        "title": "Pair Tool: Stop Sharing Session",
+        "title": "Pair With Code: Stop Sharing Session",
         "category": "Collaboration"
       },
       {
         "command": "pairtool.menu",
-        "title": "Pair Tool: Menu",
+        "title": "Pair With Code: Menu",
         "category": "Collaboration"
       },
       {
         "command": "pairtool.recentRooms",
-        "title": "Pair Tool: Recent Rooms",
+        "title": "Pair With Code: Recent Rooms",
         "category": "Collaboration"
       },
       {
         "command": "pairtool.openChat",
-        "title": "Pair Tool: Open Chat",
+        "title": "Pair With Code: Open Chat",
         "category": "Collaboration",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.openPresence",
-        "title": "Pair Tool: Show Collaborators",
+        "title": "Pair With Code: Show Collaborators",
         "category": "Collaboration",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.openSettings",
-        "title": "Pair Tool: Settings",
+        "title": "Pair With Code: Settings",
         "category": "Collaboration"
       },
       {
         "command": "pairtool.openShortcuts",
-        "title": "Pair Tool: Keyboard Shortcuts",
+        "title": "Pair With Code: Keyboard Shortcuts",
         "category": "Collaboration"
       },
       {
         "command": "pairtool.openAnalytics",
-        "title": "Pair Tool: Session Analytics",
+        "title": "Pair With Code: Session Analytics",
         "category": "Collaboration",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.openCodeReview",
-        "title": "Pair Tool: Code Review",
+        "title": "Pair With Code: Code Review",
         "category": "Collaboration",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.loginGitHub",
-        "title": "Pair Tool: Sign in with GitHub",
+        "title": "Pair With Code: Sign in with GitHub",
         "category": "Collaboration"
       },
       {
         "command": "pairtool.loginGitLab",
-        "title": "Pair Tool: Sign in with GitLab",
+        "title": "Pair With Code: Sign in with GitLab",
         "category": "Collaboration"
       },
       {
         "command": "pairtool.logout",
-        "title": "Pair Tool: Logout",
+        "title": "Pair With Code: Logout",
         "category": "Collaboration"
       },
       {
         "command": "pairtool.openRecording",
-        "title": "Pair Tool: Session Recording",
+        "title": "Pair With Code: Session Recording",
         "category": "Collaboration",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.openTerminal",
-        "title": "Pair Tool: Shared Terminal",
+        "title": "Pair With Code: Shared Terminal",
         "category": "Collaboration",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.openAV",
-        "title": "Pair Tool: Video Call",
+        "title": "Pair With Code: Video Call",
         "category": "Collaboration",
         "when": "pairWithCode.isConnected"
       },
       {
         "command": "pairtool.setupServer",
-        "title": "Pair Tool: Setup Self-Hosted Server",
+        "title": "Pair With Code: Setup Self-Hosted Server",
         "category": "Collaboration"
       }
     ],
@@ -201,7 +202,7 @@
         {
           "id": "pair-collaboration",
           "title": "Pair Session",
-          "icon": "$(broadcast)"
+          "icon": "resources/activitybar.svg"
         }
       ]
     },

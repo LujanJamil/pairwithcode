@@ -12,7 +12,7 @@ export class UICommands {
   registerCommands(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.recentRooms', this.showRecentRooms.bind(this)),
-      vscode.commands.registerCommand('pairtool.settings', this.openSettings.bind(this)),
+      vscode.commands.registerCommand('pairtool.openSettings', this.openSettings.bind(this)),
     );
   }
 
