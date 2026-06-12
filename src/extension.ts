@@ -61,18 +61,12 @@ export async function activate(context: vscode.ExtensionContext) {
     const cursorRenderer = createCursorRenderer(store);
     const handlers = createSocketHandlers(socketClient, store, persistence, activityTracker, conflictResolver);
 
-    // Initialize WebView panels
-    let chatPanel: ChatPanel | undefined;
-    let presencePanel: PresencePanel | undefined;
-
     // Cleanup on deactivate
     context.subscriptions.push({
       dispose: () => {
         activityTracker.dispose();
         conflictResolver.clearHistory();
         cursorRenderer.dispose();
-        chatPanel?.dispose();
-        presencePanel?.dispose();
       },
     });
 
@@ -88,29 +82,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     logger.debug('Presence tree view registered');
 
-    // Register settings change listener
-    context.subscriptions.push(
-      onSettingsChange((event) => {
-        if (event.affectsConfiguration('pairWithCode.serverUrl')) {
-          logger.info('Server URL changed, restart extension to apply');
-        }
-        if (event.affectsConfiguration('pairWithCode.userName')) {
-          const newName = getSettings().userName;
-          store.updatePreferences({ userName: newName });
-          logger.info('User name updated', { userName: newName });
-        }
-        if (event.affectsConfiguration('pairWithCode.followMode')) {
-          const followMode = getSettings().followMode;
-          store.updatePreferences({ followMode });
-        }
-        if (event.affectsConfiguration('pairWithCode.autoReconnect')) {
-          const autoReconnect = getSettings().autoReconnect;
-          store.updatePreferences({ autoReconnect });
-        }
-      }),
-    );
-
-    // Register commands
+    // Register commands FIRST (before room prompt, so they're always available)
     context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.copyRoomId', () => {
         const room = store.getCurrentRoom();
@@ -147,10 +119,6 @@ export async function activate(context: vscode.ExtensionContext) {
           return;
         }
         PresencePanel.createOrShow(store);
-      }),
-
-      vscode.commands.registerCommand('pairtool.openSettings', () => {
-        createSettingsPanel();
       }),
 
       vscode.commands.registerCommand('pairtool.openShortcuts', () => {
@@ -219,6 +187,28 @@ export async function activate(context: vscode.ExtensionContext) {
       })
     );
 
+    // Register settings change listener
+    context.subscriptions.push(
+      onSettingsChange((event) => {
+        if (event.affectsConfiguration('pairWithCode.serverUrl')) {
+          logger.info('Server URL changed, restart extension to apply');
+        }
+        if (event.affectsConfiguration('pairWithCode.userName')) {
+          const newName = getSettings().userName;
+          store.updatePreferences({ userName: newName });
+          logger.info('User name updated', { userName: newName });
+        }
+        if (event.affectsConfiguration('pairWithCode.followMode')) {
+          const followMode = getSettings().followMode;
+          store.updatePreferences({ followMode });
+        }
+        if (event.affectsConfiguration('pairWithCode.autoReconnect')) {
+          const autoReconnect = getSettings().autoReconnect;
+          store.updatePreferences({ autoReconnect });
+        }
+      }),
+    );
+
     // Setup status bar
     const statusBar = vscode.window.createStatusBarItem('pair-status', vscode.StatusBarAlignment.Right, 100);
     statusBar.text = '$(broadcast) Pair: Ready';
@@ -230,94 +220,62 @@ export async function activate(context: vscode.ExtensionContext) {
     handlers.setupHandlers(context);
 
     store.on('connection-state-changed', ({ isConnected, isReconnecting }: any) => {
-      vscode.commands.executeCommand('setContext', 'pairWithCode.isConnected', isConnected);
+     vscode.commands.executeCommand('setContext', 'pairWithCode.isConnected', isConnected);
 
-      if (isConnected) {
-        statusBar.text = '$(primitive-dot) Pair: Online';
-        statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.remoteBackground');
-        logger.info('Connected to collaboration session');
-      } else if (isReconnecting) {
-        statusBar.text = '$(sync~spin) Pair: Reconnecting...';
-      } else {
-        statusBar.text = '$(alert) Pair: Offline';
-        statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
-      }
+     if (isConnected) {
+       statusBar.text = '$(primitive-dot) Pair: Online';
+       statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.remoteBackground');
+       logger.info('Connected to collaboration session');
+     } else if (isReconnecting) {
+       statusBar.text = '$(sync~spin) Pair: Reconnecting...';
+     } else {
+       statusBar.text = '$(alert) Pair: Offline';
+       statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+     }
     });
 
-    // Wire store events to WebView panels
-    store.on('message-added', (message: any) => {
-      chatPanel?.postMessage({
-        command: 'newMessage',
-        message: { ...message, isOwn: message.userId === settings.userName }
-      });
-    });
+    // Register command to join a room
+    context.subscriptions.push(
+      vscode.commands.registerCommand('pairtool.joinRoom', async () => {
+        const room = await vscode.window.showInputBox({
+          prompt: 'Join/Create Room ID',
+          ignoreFocusOut: true,
+          value: (await persistence.getLastRoom()) || '',
+        });
 
-    store.on('message-deleted', (messageId: string) => {
-      chatPanel?.postMessage({
-        command: 'messageDeleted',
-        messageId
-      });
-    });
-
-    store.on('message-reaction-updated', (data: any) => {
-      chatPanel?.postMessage({
-        command: 'reactionUpdated',
-        messageId: data.messageId,
-        reactions: data.reactions
-      });
-    });
-
-    store.on('collaborator-added', () => {
-      presencePanel?.refreshUI?.();
-    });
-
-    store.on('collaborator-updated', () => {
-      presencePanel?.refreshUI?.();
-    });
-
-    store.on('collaborator-removed', () => {
-      presencePanel?.refreshUI?.();
-    });
-
-    // Prompt for room
-    const room = await vscode.window.showInputBox({
-      prompt: 'Join/Create Room ID',
-      ignoreFocusOut: true,
-      value: (await persistence.getLastRoom()) || '',
-    });
-
-    if (!room) {
-      logger.info('No room selected, extension inactive');
-      return;
-    }
-
-    // Connect to room
-    await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: 'Connecting to collaboration server...',
-      },
-      async () => {
-        try {
-          store.setCurrentRoom(room);
-          await socketClient.connect();
-          socketClient.joinRoom(room);
-          await persistence.setLastRoom(room);
-
-          // Save room to history
-          const roomSession = await roomHistory.addRoom(room, [{ id: settings.userName, name: settings.userName }]);
-          store.addSessionToHistory(roomSession);
-
-          store.setConnectionState(true, false);
-          vscode.window.showInformationMessage('✅ Connected to session!');
-          logger.info('Connected to room', { room });
-        } catch (error) {
-          const ctx = getErrorContext(error);
-          logger.error('Failed to connect', ctx);
-          vscode.window.showErrorMessage(`Failed to connect: ${ctx.message}`);
-          throw error;
+        if (!room) {
+          logger.info('No room selected');
+          return;
         }
-      },
+
+        // Connect to room
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: 'Connecting to collaboration server...',
+          },
+          async () => {
+            try {
+              store.setCurrentRoom(room);
+              await socketClient.connect();
+              socketClient.joinRoom(room);
+              await persistence.setLastRoom(room);
+
+              // Save room to history
+              const roomSession = await roomHistory.addRoom(room, [{ id: settings.userName, name: settings.userName }]);
+              store.addSessionToHistory(roomSession);
+
+              store.setConnectionState(true, false);
+              vscode.window.showInformationMessage('✅ Connected to session!');
+              logger.info('Connected to room', { room });
+            } catch (error) {
+              const ctx = getErrorContext(error);
+              logger.error('Failed to connect', ctx);
+              vscode.window.showErrorMessage(`Failed to connect: ${ctx.message}`);
+            }
+          },
+        );
+      })
     );
 
     // Setup document change listeners

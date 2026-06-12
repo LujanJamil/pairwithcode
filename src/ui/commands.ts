@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { StateStore } from '../state/store';
 import { Persistence } from '../state/persistence';
 import { logger } from '../utils/logger';
+import { createSettingsPanel } from './webview/settings/settings-panel';
 
 export class UICommands {
   constructor(
@@ -45,7 +46,7 @@ export class UICommands {
   }
 
   private async openSettings(): Promise<void> {
-    await vscode.commands.executeCommand('workbench.action.openSettings', 'pairWithCode');
+    createSettingsPanel();
     logger.debug('Opened settings');
   }
 

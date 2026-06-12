@@ -60,6 +60,11 @@
         "category": "Collaboration"
       },
       {
+        "command": "pairtool.joinRoom",
+        "title": "Pair With Code: Join Room",
+        "category": "Collaboration"
+      },
+      {
         "command": "pairtool.recentRooms",
         "title": "Pair With Code: Recent Rooms",
         "category": "Collaboration"
