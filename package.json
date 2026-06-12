@@ -22,7 +22,7 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Collaboration",
+    "Chat",
     "Visualization",
     "Other"
   ],
@@ -216,7 +216,8 @@
         {
           "id": "pairPresence",
           "name": "Active Collaborators",
-          "when": "pairWithCode.isConnected"
+          "when": "pairWithCode.isConnected",
+          "icon": "resources/activitybar.svg"
         }
       ]
     }

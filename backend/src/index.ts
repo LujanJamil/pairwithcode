@@ -63,13 +63,15 @@ const startServer = async () => {
     app.use(express.urlencoded({ limit: '10mb', extended: true }));
     app.use(pinoHttp({ logger }));
 
-    // Initialize database
+    // Initialize database FIRST before setting up routes
     logger.info('Initializing database...');
+    let pool;
     try {
-      await initializeDatabase();
+      pool = await initializeDatabase();
       logger.info('Database initialized');
     } catch (dbError) {
-      logger.warn('Database init failed, continuing in mock mode', dbError);
+      logger.error('Database init failed:', dbError);
+      throw new Error('Critical: Database initialization failed');
     }
 
     // Initialize Redis
@@ -84,12 +86,13 @@ const startServer = async () => {
     setupSocketHandlers(io);
     logger.info('Socket.io handlers configured');
 
-    // Setup routes
+    // Setup routes (pool is guaranteed to exist here)
     try {
-      setupRoutes(app, getPool());
+      setupRoutes(app, pool);
       logger.info('Routes configured');
     } catch (routeError) {
-      logger.warn('Route setup encountered issues:', routeError);
+      logger.error('Route setup failed:', routeError);
+      throw routeError;
     }
 
     // Health check endpoint
