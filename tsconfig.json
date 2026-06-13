@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"module": "Node16",
 		"target": "ES2022",
-		"outDir": "out",
+		"outDir": "dist",
 		"lib": [
 			"ES2022",
 			"DOM",
@@ -16,7 +16,7 @@
 	},
 	"exclude": [
 		"node_modules",
-		"out",
+		"dist",
 		"backend",
 		".claude"
 	]
