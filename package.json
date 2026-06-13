@@ -2,7 +2,7 @@
   "name": "pair-with-code",
   "displayName": "Pair With Code PRO",
   "publisher": "LJ-Tech",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Real-time collaborative IDE with instant pair programming, code review, live analytics, and AI conflict resolution. Code together globally.",
   "repository": {
     "type": "git",

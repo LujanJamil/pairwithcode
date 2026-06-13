@@ -61,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const cursorRenderer = createCursorRenderer(store);
     const handlers = createSocketHandlers(socketClient, store, persistence, activityTracker, conflictResolver);
 
-    // Cleanup on deactivate
+       // Cleanup on deactivate
     context.subscriptions.push({
       dispose: () => {
         activityTracker.dispose();
@@ -82,7 +82,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
     logger.debug('Presence tree view registered');
 
-    // Register commands FIRST (before room prompt, so they're always available)
+    // =========================================================================
+    // CORE SYSTEM COMMANDS
+    // =========================================================================
+
     context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.copyRoomId', () => {
         const room = store.getCurrentRoom();
@@ -90,41 +93,56 @@ export async function activate(context: vscode.ExtensionContext) {
           vscode.env.clipboard.writeText(room);
           vscode.window.showInformationMessage(`Room ID '${room}' copied!`);
         }
-      }),
+      })
+    );
 
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.stopSharing', async () => {
         await socketClient.disconnect();
         store.setCurrentRoom(undefined);
         vscode.window.showInformationMessage('Collaboration session ended.');
-      }),
+      })
+    );
 
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.menu', async () => {
         const choice = await vscode.window.showQuickPick(['Copy Room ID', 'Stop Sharing Session']);
         if (choice === 'Copy Room ID') vscode.commands.executeCommand('pairtool.copyRoomId');
         if (choice === 'Stop Sharing Session') vscode.commands.executeCommand('pairtool.stopSharing');
-      }),
+      })
+    );
 
-      // New panel commands
+    // =========================================================================
+    // COLLABORATION PANEL COMMANDS
+    // =========================================================================
+
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.openChat', () => {
         if (!store.getCurrentRoom()) {
           vscode.window.showWarningMessage('Join a session first');
           return;
         }
         ChatPanel.createOrShow(context.extensionUri, store, socketClient);
-      }),
+      })
+    );
 
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.openPresence', () => {
         if (!store.getCurrentRoom()) {
           vscode.window.showWarningMessage('Join a session first');
           return;
         }
         PresencePanel.createOrShow(store);
-      }),
+      })
+    );
 
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.openShortcuts', () => {
         createShortcutsPanel();
-      }),
+      })
+    );
 
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.openAnalytics', () => {
         if (!store.getCurrentRoom()) {
           vscode.window.showWarningMessage('Join a session first');
@@ -132,8 +150,10 @@ export async function activate(context: vscode.ExtensionContext) {
         }
         const analyticsPanel = createAnalyticsPanel(context, store, socketClient);
         analyticsPanel.show();
-      }),
+      })
+    );
 
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.openCodeReview', () => {
         if (!store.getCurrentRoom()) {
           vscode.window.showWarningMessage('Join a session first');
@@ -141,47 +161,65 @@ export async function activate(context: vscode.ExtensionContext) {
         }
         const codeReviewPanel = createCodeReviewPanel(context, store, socketClient);
         codeReviewPanel.show();
-      }),
+      })
+    );
 
-      vscode.commands.registerCommand('pairtool.loginGitHub', async () => {
-        const oauthManager = createOAuthManager(context, store);
-        await oauthManager.initiateGitHubLogin();
-      }),
-
-      vscode.commands.registerCommand('pairtool.loginGitLab', async () => {
-        const oauthManager = createOAuthManager(context, store);
-        await oauthManager.initiateGitLabLogin();
-      }),
-
-      vscode.commands.registerCommand('pairtool.logout', async () => {
-        const oauthManager = createOAuthManager(context, store);
-        await oauthManager.logout();
-      }),
-
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.openRecording', () => {
         if (!store.getCurrentRoom()) {
           vscode.window.showWarningMessage('Join a session first');
           return;
         }
         createRecordingPanel(store, socketClient);
-      }),
+      })
+    );
 
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.openTerminal', () => {
         if (!store.getCurrentRoom()) {
           vscode.window.showWarningMessage('Join a session first');
           return;
         }
         createTerminalPanel(store, socketClient);
-      }),
+      })
+    );
 
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.openAV', () => {
         if (!store.getCurrentRoom()) {
           vscode.window.showWarningMessage('Join a session first');
           return;
         }
         createAVPanel(store, socketClient);
-      }),
+      })
+    );
 
+    // =========================================================================
+    // OAUTH & SERVER CONFIGURATION COMMANDS
+    // =========================================================================
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('pairtool.loginGitHub', async () => {
+        const oauthManager = createOAuthManager(context, store);
+        await oauthManager.initiateGitHubLogin();
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('pairtool.loginGitLab', async () => {
+        const oauthManager = createOAuthManager(context, store);
+        await oauthManager.initiateGitLabLogin();
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('pairtool.logout', async () => {
+        const oauthManager = createOAuthManager(context, store);
+        await oauthManager.logout();
+      })
+    );
+
+    context.subscriptions.push(
       vscode.commands.registerCommand('pairtool.setupServer', () => {
         createServerWizardPanel();
       })
